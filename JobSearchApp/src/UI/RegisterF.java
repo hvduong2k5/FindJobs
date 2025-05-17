@@ -5,10 +5,10 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class RegisterF extends JFrame implements ActionListener {
-    private JLabel lbName,lbUsername, lbPassword, lbConfirm;
+    private JLabel lbName,lbUsername,lbPassword,lbConfirm;
     private JTextField txtName,txtUsername;
-    private JPasswordField txtPassword, txtConfirm;
-    private JButton btnRegister, btnBack;
+    private JPasswordField txtPassword,txtConfirm;
+    private JButton btnRegister,btnBack;
     private JCheckBox chkShowPassword;
     private JPanel mainPanel;
 
@@ -33,7 +33,7 @@ public class RegisterF extends JFrame implements ActionListener {
         btnRegister = new JButton("Đăng ký");
         btnBack = new JButton("Quay lại");
 
-        mainPanel = new JPanel(new GridLayout(7, 2, 10, 10));
+        mainPanel = new JPanel(new GridLayout(6, 2, 10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         mainPanel.add(lbName);
@@ -87,7 +87,7 @@ public class RegisterF extends JFrame implements ActionListener {
                 JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp!");
                 return;
             }
-
+            //code 
             JOptionPane.showMessageDialog(this, "Đăng ký thành công!");
             this.dispose();
             new LoginF("Đăng nhập"); 

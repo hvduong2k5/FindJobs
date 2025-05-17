@@ -5,10 +5,10 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class LoginF extends JFrame implements ActionListener {
-    private JLabel lbUsername, lbPassword;
+    private JLabel lbUsername,lbPassword;
     private JTextField txtUsername;
     private JPasswordField txtPassword;
-    private JButton btnLogin, btnRegister;
+    private JButton btnLogin,btnRegister,btnBack;
     private JCheckBox chkShowPassword; 
     private JPanel mainPanel;
 
@@ -25,6 +25,7 @@ public class LoginF extends JFrame implements ActionListener {
         txtPassword = new JPasswordField();
         btnLogin    = new JButton("Đăng nhập");
         btnRegister = new JButton("Đăng ký");
+        btnBack = new JButton("Quay Lại");
         chkShowPassword = new JCheckBox("Hiện mật khẩu");
 
         mainPanel = new JPanel(new GridLayout(5, 2, 10, 10));
@@ -42,8 +43,12 @@ public class LoginF extends JFrame implements ActionListener {
         mainPanel.add(btnRegister);
         mainPanel.add(btnLogin);
 
+        mainPanel.add(new JLabel());
+        mainPanel.add(btnBack);
+
         btnLogin.addActionListener(this);
         btnRegister.addActionListener(this);
+        btnBack.addActionListener(this);
 
         chkShowPassword.addActionListener(e -> {
             if (chkShowPassword.isSelected()) {
@@ -54,7 +59,7 @@ public class LoginF extends JFrame implements ActionListener {
         });
 
         this.add(mainPanel);
-        this.setSize(350, 220);
+        this.setSize(450, 250);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
@@ -68,14 +73,33 @@ public class LoginF extends JFrame implements ActionListener {
             if (user.equals("admin") && pass.equals("123")) {
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
                 this.dispose();
-//                new MainForm();
+                int user_id = 3;
+                //
+                //lấy thông tin người dùng user.role
+                //
+                int role =3;//1/2/3
+                switch(role) {
+                case 1:
+                	break;
+                case 2:
+                	break;
+                case 3:
+                    new MainF("Ứng dụng Tìm kiếm Việc làm",user_id);
+                	break;
+                }
+                
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
-        } else if (e.getSource() == btnRegister) {
+        }
+        if (e.getSource() == btnRegister) {
         		this.dispose();
         		new RegisterF("Đăng ký tài khoản mới");
         }
+        if (e.getSource() == btnBack) {
+    		this.dispose();
+    		new MainF("Ứng dụng Tìm kiếm Việc làm(chưa đăng nhập)",-1);
+    }   
     }
 
     public static void main(String[] args) {
