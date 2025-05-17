@@ -1,2 +1,2 @@
 /bin/
-JobSearchApp/src/Util
+../JobSearchApp/src/Util/DBUtil.java
