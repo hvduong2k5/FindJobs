@@ -17,7 +17,7 @@ CREATE TABLE Job
     salary DECIMAL(10,2),
     company_name NVARCHAR(300) NOT NULL,
     description NVARCHAR(1000),
-    is_public BIT DEFAULT FALSE,
+    is_public int DEFAULT 0 NOT NULL,
     requirement NVARCHAR(1000),
     address NVARCHAR(200)
 );
