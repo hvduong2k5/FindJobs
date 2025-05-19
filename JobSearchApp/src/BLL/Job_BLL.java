@@ -2,29 +2,30 @@ package BLL;
 
 import java.util.ArrayList;
 import java.util.List;
-import DAL.Job_DAL;
-import DTO.Job;
-import DTO.Category;
+
+import DAL.JobDAL;
+import DTO.JobDTO;
+import DTO.CategoryDTO;
 
 public class Job_BLL {
-    private Job_DAL jobDAL;
+    private JobDAL jobDAL;
     
     public Job_BLL() {
-        this.jobDAL = Job_DAL.getInstance();
+        this.jobDAL = JobDAL.getInstance();
     }
     
-    public List<Job> getAllJobs() {
+    public List<JobDTO> getAllJobs() {
         return jobDAL.getAllJobs();
     }
     
-    public boolean addJob(Job job) {
+    public boolean addJob(JobDTO job) {
         if (job == null || job.getJobName() == null || job.getJobName().trim().isEmpty()) {
             return false;
         }
         return jobDAL.addJob(job);
     }
     
-    public boolean updateJob(Job job) {
+    public boolean updateJob(JobDTO job) {
         if (job == null || job.getJobName() == null || job.getJobName().trim().isEmpty()) {
             return false;
         }
@@ -35,18 +36,18 @@ public class Job_BLL {
         return jobDAL.deleteJob(jobId);
     }
     
-    public Job getJobById(int jobId) {
+    public JobDTO getJobById(int jobId) {
         return jobDAL.getJobById(jobId);
     }
     
-    public List<Job> searchJobs(String keyword) {
-        List<Job> allJobs = jobDAL.getAllJobs();
+    public List<JobDTO> searchJobs(String keyword) {
+        List<JobDTO> allJobs = jobDAL.getAllJobs();
         if (keyword == null || keyword.trim().isEmpty()) {
             return allJobs;
         }        
         keyword = keyword.toLowerCase();
-        List<Job> result = new ArrayList<>();
-        for (Job job : allJobs) {
+        List<JobDTO> result = new ArrayList<>();
+        for (JobDTO job : allJobs) {
             if (job.getJobName().toLowerCase().contains(keyword) || 
                 job.getCompanyName().toLowerCase().contains(keyword)) {
                 result.add(job);
