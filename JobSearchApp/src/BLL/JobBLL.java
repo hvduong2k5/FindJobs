@@ -7,10 +7,10 @@ import DAL.JobDAL;
 import DTO.JobDTO;
 import DTO.CategoryDTO;
 
-public class Job_BLL {
+public class JobBLL {
     private JobDAL jobDAL;
     
-    public Job_BLL() {
+    public JobBLL() {
         this.jobDAL = JobDAL.getInstance();
     }
     
