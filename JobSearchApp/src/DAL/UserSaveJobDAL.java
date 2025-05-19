@@ -26,6 +26,36 @@ public class UserSaveJobDAL {
 	}
 
 
+	public UserSaveJobDTO SelectByUserIdJobId(int userId, int JobId)
+	{
+		Connection conn = null;
+		try {
+			conn = DBUtil.MakeConnection();
+			String sql = "select * from usersavejob where user_id = ? and job_id = ?";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, userId);
+			ps.setInt(2, JobId);
+			ResultSet rs = ps.executeQuery();
+			UserSaveJobDTO usj = null;
+			if(rs.next())
+			{
+				usj = (new UserSaveJobDTO(rs.getInt("user_save_job_id"),
+						                       rs.getInt("user_id"),
+						                       rs.getInt("job_id")));
+			}
+			rs.close();
+			ps.close();
+			return usj;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			DBUtil.CloseConnection(conn);
+		}
+		return null;
+	}
 	
 	
 	public List<UserSaveJobDTO> SelectAllByUserId (int userId)
@@ -111,14 +141,15 @@ public class UserSaveJobDAL {
 		return false;
 	}
 	
-	public boolean Delete(int usjId)
+	public boolean Delete(int userId, int jobId)
 	{
 		Connection conn = null;
 		try {
 			conn = DBUtil.MakeConnection();
-			String sql = "delete from usersavejob where user_save_job_id = ?";
+			String sql = "delete from usersavejob where user_id = ? and job_id";
 			PreparedStatement ps = conn.prepareStatement(sql);
-			ps.setInt(1, usjId);
+			ps.setInt(1, userId);
+			ps.setInt(2, jobId);
 			int result = ps.executeUpdate();
 			ps.close();
 			if(result > 0)return true;
@@ -184,7 +215,7 @@ public class UserSaveJobDAL {
 	    // Test Delete (xóa bản ghi mới thêm, cần lấy ID thật nếu có tự tăng)
 	    if (userJobs != null && !userJobs.isEmpty()) {
 	        int lastId = userJobs.get(userJobs.size() - 1).getUser_save_job_id();
-	        boolean deleteResult = dal.Delete(lastId);
+	        boolean deleteResult = dal.Delete(lastId, 1);
 	        System.out.println("Delete last save job: " + (deleteResult ? "Success" : "Fail"));
 	    } else {
 	        System.out.println("No save job to delete");
