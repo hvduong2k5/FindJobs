@@ -24,7 +24,7 @@ public class JobDTO {
         
     }
     public void setCategories(List<CategoryDTO> list) {
-    	this.categories=list;
+    	this.categoryDTOs=list;
     }
 
     public int getJobId() {
@@ -84,7 +84,7 @@ public class JobDTO {
     }
 
 	public List<CategoryDTO> getCategories() {
-		return this.categories;
+		return this.categoryDTOs;
 	}
 }
 
