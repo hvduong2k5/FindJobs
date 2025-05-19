@@ -1,6 +1,7 @@
 package BLL;
 
 import java.util.ArrayList;
+import Util.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,15 +24,15 @@ public class UserBLL {
         }
     }
 	
-    public int createUser(String name, String account, String password, int role) {
+    public Response createUser(String name, String account, String password, int role) {
         try {
             if (account == null || account.isEmpty() || password == null || password.isEmpty() || name == null || name.isEmpty()) {
-                return 400;// "Tên tài khoản, mật khẩu và tên người dùng không được để trống.", 400, null);
+                return Response.Error("Tên tài khoản, mật khẩu và tên người dùng không được để trống.");// "", 400, null);
             }
 
             UserDTO existingUser = dal.SelectByAccount(account);
             if (existingUser != null) {
-                return 409;// "Tên tài khoản đã tồn tại.", 409, null);
+                return Response.Error("Tên tài khoản đã tồn tại.");// "", 409, null);
             }
 
             UserDTO newUser = new UserDTO();
@@ -41,13 +42,13 @@ public class UserBLL {
             newUser.setUser_name(name);
 
             if (dal.Insert(newUser)) {
-                return 201;// "Tạo người dùng thành công.", 201, createdUser); // 201 Created
+                return Response.Success("Tạo người dùng thành công.");// "", 201, createdUser); // 201 Created
             } else {
-                return 500; //"Không thể tạo người dùng do lỗi hệ thống.", 500, null);
+                return Response.Error("Không thể tạo người dùng do lỗi hệ thống."); //"", 500, null);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            return 500;
+            return Response.Error("Không thể tạo người dùng do lỗi hệ thống.");
         }
     }
 
@@ -99,20 +100,20 @@ public class UserBLL {
             return false;
         }
     }
-	public int updatePassword(int userId, String oldPassword, String newPassword) {
+	public Response updatePassword(int userId, String oldPassword, String newPassword) {
         try {
             if (newPassword == null || newPassword.trim().isEmpty()) {
-                return 400;// "Mật khẩu mới không được để trống.", 400);
+                return Response.Error("Mật khẩu mới không được để trống.");// "", 400);
             }
 
             UserDTO userToUpdate = dal.SelectById(userId);
             if (userToUpdate == null) {
-                return 404;//  "Tài khoản không tồn tại.", 404);
+                return Response.Error("Tài khoản không tồn tại.");//  "", 404);
             }
 
             UserDTO currentUser = UserSession.GetInstance().GetUser();
             if (currentUser == null) {
-                return 401;// "Phiên làm việc không hợp lệ. Vui lòng đăng nhập lại.", 401); // Unauthorized
+                return Response.Error("Phiên làm việc không hợp lệ. Vui lòng đăng nhập lại.");// "", 401); // Unauthorized
             }
 
             boolean isAdminUpdatingOthers = currentUser.getRole() == 99 && currentUser.getUser_id() != userId;
@@ -121,47 +122,47 @@ public class UserBLL {
                 // Admin đổi mật khẩu cho người khác, không cần mật khẩu cũ
                 userToUpdate.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt(16)));
                 if (dal.UpdatePassword(userToUpdate)) {
-                    return 200;// "Admin cập nhật mật khẩu thành công.", 200);
+                    return Response.Success("Admin cập nhật mật khẩu thành công.");// "", 200);
                 } else {
-                    return 500;//  "Admin không thể cập nhật mật khẩu.", 500);
+                    return Response.Error("Admin không thể cập nhật mật khẩu.");//  "", 500);
                 }
             } else if (currentUser.getUser_id() == userId) {
                 // Người dùng tự đổi mật khẩu của mình
                 if (oldPassword == null || oldPassword.isEmpty()) {
-                     return 400;// "Mật khẩu cũ không được để trống khi tự thay đổi.
+                     return Response.Error("Mật khẩu cũ không được để trống khi tự thay đổi.");// "
                 }
                 if (!BCrypt.checkpw(oldPassword, userToUpdate.getPassword())) {
-                    return 401;//  "Mật khẩu cũ không chính xác.", 401);
+                    return Response.Error("Mật khẩu cũ không chính xác.");//  "", 401);
                 }
                 userToUpdate.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt(12)));
                 if (dal.UpdatePassword(userToUpdate)) {
-                    return 200;//  "Đổi mật khẩu thành công.", 200);
+                    return Response.Success("Đổi mật khẩu thành công.");//  "", 200);
                 } else {
-                    return 500;// "Không thể đổi mật khẩu.", 500);
+                    return Response.Error("Không thể đổi mật khẩu.");// "", 500);
                 }
             } else {
                 // Người dùng không phải admin và đang cố đổi mật khẩu của người khác
-                return 403;// "Bạn không có quyền đổi mật khẩu cho người dùng này.", 403); // Forbidden
+                return Response.Error("Bạn không có quyền đổi mật khẩu cho người dùng này.");// "", 403); // Forbidden
             }
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            return 500;//new ActionResult(false, "Lỗi hệ thống: " + ex.getMessage(), 500);
+            return Response.Error("Lỗi hệ thống: "+ex.getMessage());//new ActionResult(false, " " + ex.getMessage(), 500);
         }
     }
-    public int Login(String account, String password) {
+    public Response Login(String account, String password) {
         try {
             if (account == null || account.isEmpty() || password == null || password.isEmpty()) {
-                return 400;//bad request
+                return Response.Error("Thông tin không được để trống.");// "", 400);
             }
 
             UserDTO user = dal.SelectByAccount(account);
             if (user == null) {
-                return 404;//not found
+                return Response.Error("Tài khoản không tồn tại.");//  "", 404);
             }
 
             if (!BCrypt.checkpw(password, user.getPassword())) {
-                return 404;//
+                return Response.Error("Mật khẩu không đúng.");//  "", 404);
             }
 
             
@@ -174,52 +175,52 @@ public class UserBLL {
 
 
             UserSession.GetInstance().setCurrentUser(userDto); // UserSession.setCurrentUser cần được triển khai
-            return 200;
+            return Response.Success("Đăng nhập thành công.");
         } catch (Exception ex) {
-            return 500;
+            return Response.Error("Lỗi hệ thống : " +ex.getMessage());
         }
     }
-    public int deleteUser(int userId) {
+    public Response deleteUser(int userId) {
         try {
             UserDTO currentUser = UserSession.GetInstance().GetUser();
             if (currentUser == null) {
 
-            	return 401;
+                return Response.Error("Bạn chưa đăng nhập.");//  "", 404);
             }
 
             if (currentUser.getUser_id() == userId) {
-                return 400;// "Bạn không thể tự xóa tài khoản của mình.", 400);
+                return Response.Error("Bạn không thể tự xóa tài khoản của mình.");// "", 400);
             }
             
             // Chỉ admin mới có quyền xóa (hoặc bạn có thể có logic quyền phức tạp hơn)
             if (dal.SelectById(currentUser.getUser_id()).getRole() != 99) {
-                 return 403;// "Bạn không có quyền xóa người dùng.", 403);
+                 return Response.Error("Bạn không có quyền xóa người dùng.");// "", 403);
             }
 
             UserDTO userToDelete = dal.SelectById(userId);
             if (userToDelete == null) {
-                return 404;// "Người dùng không tồn tại.", 404);
+                return Response.Error("Người dùng không tồn tại.");// "", 404);
             }
 
             if (dal.Delete(userId)) {
-                return 200;// "Xóa người dùng thành công.", 200);
+                return Response.Success("Xóa người dùng thành công.");// "", 200);
             } else {
-                return 500;//, "Không thể xóa người dùng.", 500);
+                return Response.Error("Không thể xóa người dùng.");//, "", 500);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            return 500;
+            return Response.Error("Lỗi hệ thống : "+ex.getMessage());
         }
     }
-    public int Register(String account, String password, String name, int role ) {
+    public Response Register(String account, String password, String name, int role ) {
         try {
             if (account == null || account.isEmpty() || password == null || password.isEmpty()) {
-                return 400;//bad request
+                return Response.Error("Thông tin không được để trống.");// "", 400);
             }
 
             UserDTO user = dal.SelectByAccount(account);
             if (user != null) {
-                return 409;//đã tồn tại
+                return Response.Error("Tài khoản đã tồn tại");//
             }
 
             UserDTO newUser = new UserDTO();
@@ -229,13 +230,13 @@ public class UserBLL {
             newUser.setUser_name(name);
             
 
-            if(dal.Insert(newUser))return 200;
+            if(dal.Insert(newUser))return Response.Success("Đăng ký thành công");
  
 
 
-            return 500;
+            return Response.Error("Đăng ký thất bại.");
         } catch (Exception ex) {
-            return 500;
+            return Response.Error("Đăng ký thất bại.");
         }
     }
     
@@ -243,54 +244,43 @@ public class UserBLL {
     public static void main(String[] args) {
         UserBLL bll = new UserBLL();
 
-        System.out.println("=== TEST NGƯỜI DÙNG THƯỜNG ===");
+        System.out.println("=== TEST NGƯỜI DÙNG ===");
 
-        // 1. Tạo người dùng thường
-        int resultUser = bll.createUser("User Test", "usertest1", "123456", 1);
-        System.out.println("Tạo user thường: " + resultUser); // 201
+        // 1. Đăng ký người dùng
+        System.out.println("→ Đăng ký người dùng mới:");
+        Response registerResponse = bll.Register("test_user", "123456", "Người dùng test", 1);
+        System.out.println("Đăng ký: " + registerResponse.getMessage());
 
-        // 2. Đăng nhập người dùng
-        int loginUser = bll.Login("usertest1", "123456");
-        System.out.println("Đăng nhập user: " + loginUser); // 200
-        int userId = UserSession.GetInstance().GetUser().getUser_id();
+        // 2. Đăng nhập với tài khoản vừa đăng ký
+        System.out.println("→ Đăng nhập:");
+        Response loginResponse = bll.Login("test_user", "123456");
+        System.out.println("Đăng nhập: " + loginResponse.getMessage());
 
-        // 3. Đổi mật khẩu đúng
-        int changePwd = bll.updatePassword(userId, "123456", "654321");
-        System.out.println("User đổi mật khẩu đúng: " + changePwd); // 200
+        // 3. Lấy thông tin người dùng
+        System.out.println("→ Lấy thông tin người dùng ID=2:");
+        UserDTO user = bll.getUserById(2); // Giả sử ID = 2 tồn tại
+        if (user != null) {
+            System.out.println("Tên: " + user.getUser_name());
+            System.out.println("Tài khoản: " + user.getAccount());
+            System.out.println("Vai trò: " + user.getRole());
+        } else {
+            System.out.println("Không tìm thấy người dùng.");
+        }
 
-        // 4. Đăng nhập lại bằng mật khẩu mới
-        int relogin = bll.Login("usertest", "654321");
-        System.out.println("Đăng nhập lại: " + relogin); // 200
+        // 4. Cập nhật thông tin người dùng
+        System.out.println("→ Cập nhật tên người dùng:");
+        boolean updateResponse = bll.updateUser(2, "Tên mới", 1);
+        System.out.println("Cập nhật: " + (updateResponse ? "Thành công" : "Thất bại"));
 
-        // 5. Xóa bản thân (phải bị từ chối)
-        int deleteSelf = bll.deleteUser(userId);
-        System.out.println("User tự xóa chính mình: " + deleteSelf); // 400
+        // 5. Đổi mật khẩu người dùng tự đổi
+        System.out.println("→ Đổi mật khẩu:");
+        Response passwordResponse = bll.updatePassword(2, "123456", "newpass123");
+        System.out.println("Đổi mật khẩu: " + passwordResponse.getMessage());
 
-        System.out.println("\n=== TEST ADMIN ===");
-
-        // 6. Tạo admin
-        int resultAdmin = bll.createUser("Admin Test", "admintest1", "admin123", 99);
-        System.out.println("Tạo admin: " + resultAdmin); // 201
-
-        // 7. Đăng nhập admin
-        int loginAdmin = bll.Login("admintest1", "admin123");
-        System.out.println("Đăng nhập admin: " + loginAdmin); // 200
-        int adminId = UserSession.GetInstance().GetUser().getUser_id();
-
-        // 8. Admin đổi mật khẩu cho user
-        int adminChangeUserPwd = bll.updatePassword(userId, null, "111111");
-        System.out.println("Admin đổi mật khẩu cho user: " + adminChangeUserPwd); // 200
-
-        // 9. Đăng nhập user bằng mật khẩu mới
-        int reloginAfterAdminChange = bll.Login("usertest", "111111");
-        System.out.println("User đăng nhập sau khi admin đổi: " + reloginAfterAdminChange); // 200
-
-        // 10. Admin xóa người dùng
-        int deleteUser = bll.deleteUser(userId);
-        System.out.println("Admin xóa user: " + deleteUser); // 200
-
-        // 11. Admin cố xóa chính mình (bị từ chối)
-        int deleteSelfAdmin = bll.deleteUser(adminId);
-        System.out.println("Admin tự xóa chính mình: " + deleteSelfAdmin); // 400
+        // 6. Xóa người dùng (chỉ admin mới thực hiện được)
+        System.out.println("→ Xóa người dùng:");
+        Response deleteResponse = bll.deleteUser(2);
+        System.out.println("Xóa: " + deleteResponse.getMessage());
     }
+
 }
