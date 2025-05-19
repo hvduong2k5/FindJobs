@@ -84,7 +84,7 @@ public class LoginF extends JFrame implements ActionListener {
                 case 2:
                 	break;
                 case 3:
-                    new MainF("Ứng dụng Tìm kiếm Việc làm",user_id);
+                    new MainF("Ứng dụng Tìm kiếm Việc làm",user_id,role);
                 	break;
                 }
                 
@@ -98,7 +98,7 @@ public class LoginF extends JFrame implements ActionListener {
         }
         if (e.getSource() == btnBack) {
     		this.dispose();
-    		new MainF("Ứng dụng Tìm kiếm Việc làm(chưa đăng nhập)",-1);
+    		new MainF("Ứng dụng Tìm kiếm Việc làm(chưa đăng nhập)",-1,0);
     }   
     }
 
