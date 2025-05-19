@@ -181,6 +181,40 @@ public class UserDAL {
 		return false;
 	}
 	
+	public UserDTO SelectByAccount(String account)
+	{
+		Connection conn =  null;
+		try
+		{
+			conn = DBUtil.MakeConnection();
+			String sql = "Select * from user where account = ?";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setString(1, account);
+			ResultSet rs = ps.executeQuery();
+			UserDTO result = null;
+			if(rs.next())
+			{
+				result = new UserDTO(rs.getInt("user_id"),
+						             rs.getString("user_name"),
+						             rs.getString("account"),
+						             rs.getString("password"),
+						             rs.getInt("role"));
+			}
+			rs.close();
+			ps.close();
+			return result;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			DBUtil.CloseConnection(conn);
+		}
+		return null;
+
+	}
 	public static void main(String[] args) {
 	    UserDAL dal = UserDAL.GetInstance();
 
