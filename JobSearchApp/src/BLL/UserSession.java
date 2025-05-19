@@ -24,7 +24,7 @@ public class UserSession {
     public static UserDTO GetUser() {
     	return currentUser;
     }
-    public void setCurrentUser(UserDTO user)
+     void setCurrentUser(UserDTO user)
     {
     	currentUser = new UserDTO(user.getUser_id()
     			,user.getUser_name()
