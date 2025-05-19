@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import DTO.*;
+import Util.DBUtil;
 public class JobDAL {
 	private static JobDAL instance=null;
 	private JobDAL() {
@@ -21,7 +22,7 @@ public class JobDAL {
 	public List<JobDTO> getAllJobs() {
         List<JobDTO> jobDTOs = new ArrayList<>();
         String sql = "SELECT * FROM job";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBUtil.MakeConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -61,7 +62,7 @@ public class JobDAL {
 	public boolean addJob(JobDTO jobDTO) {
 	    String sql = "INSERT INTO job (job_name, salary, company_name, description, is_public, requirement, address) " +
 	                 "VALUES (?, ?, ?, ?, ?, ?, ?)";	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {	        
 	        stmt.setString(1, jobDTO.getJobName());
 	        stmt.setDouble(2, jobDTO.getSalary());
@@ -92,7 +93,7 @@ public class JobDAL {
 	    String sql = "UPDATE job SET job_name = ?, salary = ?, company_name = ?, description = ?, " +
 	                 "is_public = ?, requirement = ?, address = ? WHERE job_id = ?";
 	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {
 	        
 	        stmt.setString(1, jobDTO.getJobName());
@@ -132,7 +133,7 @@ public class JobDAL {
 	public boolean deleteJob(int jobId) {
 	    Connection conn = null;
 	    try {
-	        conn = DBConnection.getConnection();
+	        conn = DBUtil.MakeConnection();
 	        conn.setAutoCommit(false);
 	        
 	        deleteJobCategories(conn, jobId);
@@ -179,7 +180,7 @@ public class JobDAL {
 	public JobDTO getJobById(int jobId) {
 	    String sql = "SELECT * FROM job WHERE job_id = ?";
 	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {
 	        
 	        stmt.setInt(1, jobId);

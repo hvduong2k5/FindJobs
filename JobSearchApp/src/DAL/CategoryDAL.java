@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import DTO.*;
+import Util.DBUtil;
 public class CategoryDAL {
 	private static CategoryDAL instance=null;
 	private CategoryDAL() {
@@ -20,7 +21,7 @@ public class CategoryDAL {
 	}
 	public boolean addCategory(String category_name) {
 		String sql="Insert into category (category_name) values (?)";
-		try (Connection conn = DBConnection.getConnection();
+		try (Connection conn = DBUtil.MakeConnection();
 		         PreparedStatement stmt = conn.prepareStatement(sql)) {		        
 		        stmt.setString(1, category_name);
 		        return stmt.executeUpdate() > 0;
@@ -32,7 +33,7 @@ public class CategoryDAL {
 	}
 	public boolean deleteCategory(int id) {
 		String sql = "DELETE FROM category WHERE category_id = ?";	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {        
 	        stmt.setInt(1, id);
 	        int affectedRows = stmt.executeUpdate();
@@ -46,7 +47,7 @@ public class CategoryDAL {
 	public List<CategoryDTO> getAllCategories(){
 		 List<CategoryDTO> categoryDTOs = new ArrayList<>();
 	        String sql = "SELECT * FROM category";
-	        try (Connection conn = DBConnection.getConnection();
+	        try (Connection conn = DBUtil.MakeConnection();
 	             PreparedStatement stmt = conn.prepareStatement(sql)) {
 	            ResultSet rs = stmt.executeQuery();
 	            while (rs.next()) {
@@ -59,7 +60,7 @@ public class CategoryDAL {
 	public boolean updateCategory(CategoryDTO categoryDTO) {
 	    String sql = "UPDATE category SET category_name = ? WHERE category_id = ?";
 	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {
 	        
 	        stmt.setString(1, categoryDTO.getCategoryName());
@@ -74,7 +75,7 @@ public class CategoryDAL {
 	public CategoryDTO getCategoryById(int categoryId) {
 	    String sql = "SELECT * FROM category WHERE category_id = ?";
 	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {
 	        
 	        stmt.setInt(1, categoryId);
@@ -97,7 +98,7 @@ public class CategoryDAL {
 	                 "JOIN categoryofjob cj ON j.job_id = cj.job_id " +
 	                 "WHERE cj.category_id = ?";
 	    
-	    try (Connection conn = DBConnection.getConnection();
+	    try (Connection conn = DBUtil.MakeConnection();
 	         PreparedStatement stmt = conn.prepareStatement(sql)) {
 	        
 	        stmt.setInt(1, categoryId);
