@@ -6,6 +6,7 @@ import DTO.UserDTO;
 public class UserSession {
 
 	private static UserSession _instance;
+	private UserDAL dal = UserDAL.GetInstance();
 	
     private static UserDTO currentUser;
 
@@ -20,7 +21,19 @@ public class UserSession {
         }
         return _instance;
     }
-    
+    public void setCurrentUser(UserDTO user)
+    {
+    	currentUser = new UserDTO(user.getUser_id()
+    			,user.getUser_name()
+    			,user.getAccount()
+    			,user.getPassword()
+    			,user.getRole());
+    }
+    public boolean updateName(String name)
+    {
+    	currentUser.setUser_name(name);
+    	return dal.UpdateInfo(currentUser);
+    }
     public UserDTO getLoggedInUser() {
         return currentUser;
     }
@@ -30,11 +43,7 @@ public class UserSession {
  
     
     public void logout() {
-        if (currentUser != null) {
-            System.out.println("User logged out: " + currentUser.getUser_name()); // Log để kiểm tra
-        } else {
-             System.out.println("No user was logged in."); // Log để kiểm tra
-        }
+ 
         currentUser = null;
     }
     
