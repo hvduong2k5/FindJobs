@@ -3,18 +3,19 @@ package BLL;
 
 import java.util.ArrayList;
 import java.util.List;
-import DAL.Category_DAL;
-import DTO.Category;
-import DTO.Job;
 
-public class Category_BLL {
-    private Category_DAL categoryDAL;
+import DAL.CategoryDAL;
+import DTO.CategoryDTO;
+import DTO.JobDTO;
+
+public class CategoryBLL {
+    private CategoryDAL categoryDAL;
     
-    public Category_BLL() {
-        this.categoryDAL = Category_DAL.getInstance();
+    public CategoryBLL() {
+        this.categoryDAL = CategoryDAL.getInstance();
     }
     
-    public List<Category> getAllCategories() {
+    public List<CategoryDTO> getAllCategories() {
         return categoryDAL.getAllCategories();
     }
     
@@ -24,7 +25,7 @@ public class Category_BLL {
         }
         return categoryDAL.addCategory(categoryName);
     }
-        public boolean updateCategory(Category category) {
+        public boolean updateCategory(CategoryDTO category) {
         if (category == null || category.getCategoryName() == null || 
             category.getCategoryName().trim().isEmpty()) {
             return false;
@@ -36,23 +37,23 @@ public class Category_BLL {
         return categoryDAL.deleteCategory(categoryId);
     }
     
-    public Category getCategoryById(int categoryId) {
+    public CategoryDTO getCategoryById(int categoryId) {
         return categoryDAL.getCategoryById(categoryId);
     }
     
-    public List<Job> getJobsByCategory(int categoryId) {
+    public List<JobDTO> getJobsByCategory(int categoryId) {
         return categoryDAL.getJobsByCategory(categoryId);
     }
     
-    public List<Category> searchCategories(String keyword) {
-        List<Category> allCategories = categoryDAL.getAllCategories();
+    public List<CategoryDTO> searchCategories(String keyword) {
+        List<CategoryDTO> allCategories = categoryDAL.getAllCategories();
         if (keyword == null || keyword.trim().isEmpty()) {
             return allCategories;
         }
         
         keyword = keyword.toLowerCase();
-        List<Category> result = new ArrayList<>();
-        for (Category category : allCategories) {
+        List<CategoryDTO> result = new ArrayList<>();
+        for (CategoryDTO category : allCategories) {
             if (category.getCategoryName().toLowerCase().contains(keyword)) {
                 result.add(category);
             }
