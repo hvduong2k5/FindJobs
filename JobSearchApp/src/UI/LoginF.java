@@ -77,28 +77,30 @@ public class LoginF extends JFrame implements ActionListener {
             UserBLL loginUser = new UserBLL();
             Response r = loginUser.Login(user, pass);
             if(r.isSuccess()) {
-            	UserDTO User = UserSession.GetUser();
-            	this.dispose();
+                UserDTO User = UserSession.GetUser();
+                this.dispose();
                 switch(User.getRole()) {
-                case 1:
-                	new AdminF("Quản lý ứng dụng tìm kiếm việc làm",User.getUser_id());
-                	break;
-                case 2:
-                case 3:
-                    new MainF("Ứng dụng Tìm kiếm Việc làm",User.getUser_id(),User.getRole());
-                	break;
+                    case 1: // Admin
+                        new AdminF("Quản lý ứng dụng tìm kiếm việc làm", User.getUser_id());
+                        break;
+                    case 2: // Nhà tuyển dụng
+                        new EmployerMainF(User.getUser_id());
+                        break;
+                    case 3: // Người tìm việc
+                        new JobSeekerMainF(User.getUser_id());
+                        break;
                 }
             }
             JOptionPane.showMessageDialog(this, r.getMessage());
         }
         if (e.getSource() == btnRegister) {
-        		this.dispose();
-        		new RegisterF("Đăng ký tài khoản mới");
+            this.dispose();
+            new RegisterF("Đăng ký tài khoản mới");
         }
         if (e.getSource() == btnBack) {
-    		this.dispose();
-    		new MainF("Ứng dụng Tìm kiếm Việc làm(chưa đăng nhập)",-1,0);
-    }   
+            this.dispose();
+            new GuestMainF();
+        }   
     }
 
     public static void main(String[] args) {
