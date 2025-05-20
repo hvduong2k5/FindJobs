@@ -1,27 +1,30 @@
  package UI;
-
+import DTO.*;
+import BLL.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ProfilePanel extends JPanel {
+public class ProfilePanel extends JPanel implements ActionListener{
     private int userId;
 
     private JLabel lbUsernameLabel, lbAccountLabel, lbRoleLabel;
     private JTextField txtUsername, txtAccount, txtRole;
-    // Thêm các trường khác nếu cần từ bảng user (ví dụ: email, phone nếu có)
+    private JButton btnSaveUser; 
 
     public ProfilePanel(int userId) {
         this.userId = userId;
-        initComponents();
+        GUI();
         loadUserProfile();
     }
 
-    private void initComponents() {
+    private void GUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder(
@@ -67,6 +70,9 @@ public class ProfilePanel extends JPanel {
         txtRole = new JTextField(25);
         txtRole.setFont(textFont);
         txtRole.setEditable(false);
+        
+        btnSaveUser = new JButton("Lưu");
+        btnSaveUser.addActionListener(this);
 
         gbc.gridx = 0; gbc.gridy = 0; formPanel.add(lbUsernameLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; formPanel.add(txtUsername, gbc);
@@ -76,7 +82,9 @@ public class ProfilePanel extends JPanel {
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; formPanel.add(lbRoleLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; formPanel.add(txtRole, gbc);
-
+        
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; formPanel.add(new JLabel(""), gbc);
+        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; formPanel.add(btnSaveUser, gbc);
         // Optional: Add an "Edit" button if you want to allow editing later
         // JButton btnEdit = new JButton("Chỉnh sửa thông tin");
         // btnEdit.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -94,32 +102,24 @@ public class ProfilePanel extends JPanel {
             txtRole.setText("Khách");
             return;
         }
-//
-//        String sql = "SELECT user_name, account, role FROM user WHERE user_id = ?";
-//        try (Connection conn = DBConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//
-//            pstmt.setInt(1, this.userId);
-//            ResultSet rs = pstmt.executeQuery();
-//
-//            if (rs.next()) {
-//                txtUsername.setText(rs.getString("user_name"));
-//                txtAccount.setText(rs.getString("account"));
-//                int roleId = rs.getInt("role");
-//                String roleName = "Không xác định";
-//                switch (roleId) {
-//                    case 0: roleName = "Khách (Guest)"; break;
-//                    case 1: roleName = "Quản trị viên (Admin)"; break;
-//                    case 2: roleName = "Nhà tuyển dụng (HR)"; break;
-//                    case 3: roleName = "Người tìm việc (User)"; break;
-//                }
-//                txtRole.setText(roleName + " (ID: " + roleId + ")");
-//            } else {
-//                JOptionPane.showMessageDialog(this, "Không tìm thấy thông tin người dùng với ID: " + this.userId, "Lỗi", JOptionPane.ERROR_MESSAGE);
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(this, "Lỗi khi tải thông tin cá nhân: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-//        }
+        UserDTO currentUser = UserSession.GetInstance().getLoggedInUser();
+          txtAccount.setText(currentUser.getAccount());
+          txtUsername.setText(currentUser.getUser_name());
+	      int roleId = currentUser.getRole();
+	      String roleName = "Không xác định";
+	      switch (roleId) {
+	          case 0: roleName = "Khách (Guest)"; break;
+	          case 1: roleName = "Quản trị viên (Admin)"; break;
+	          case 2: roleName = "Nhà tuyển dụng (HR)"; break;
+	          case 3: roleName = "Người tìm việc (User)"; break;
+	      }
+	      txtRole.setText(roleName + " (ID: " + roleId + ")");
     }
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if(e.getSource() == btnSaveUser) {
+			UserSession.GetInstance().updateName(txtUsername.getText());
+			}
+	}
 }

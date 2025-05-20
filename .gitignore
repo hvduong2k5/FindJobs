@@ -1,3 +1,5 @@
+/JobSearchApp/mysql-connector-j-8.0.32.jar
+/JobSearchApp/src/Util/DBUtil.java
 # Compiled class file
 *.class
 

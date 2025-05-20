@@ -5,7 +5,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
+import BLL.*;
+import DTO.*;
 public class AdminF extends JFrame implements ActionListener {
 
     private JPanel mainContentPanel; // Panel chính sử dụng CardLayout
@@ -184,13 +185,11 @@ public class AdminF extends JFrame implements ActionListener {
                 this.dispose(); // Đóng cửa sổ Admin
                 // Quay lại màn hình đăng nhập hoặc MainF với vai trò khách
                 SwingUtilities.invokeLater(() -> new LoginF("Đăng nhập")); // Hoặc new MainF(...)
-                System.out.println("Admin (ID: " + adminId + ") đã đăng xuất.");
+//                System.out.println("Admin (ID: " + adminId + ") đã đăng xuất.");
             }
         }
     }
-
     public static void main(String[] args) {
-        // Giả sử admin đăng nhập thành công với ID là 1
-        SwingUtilities.invokeLater(() -> new AdminF("Trang Quản Trị", 1));
+        SwingUtilities.invokeLater(() -> new AdminF("Trang Quản Trị", adminId));
     }
 }
