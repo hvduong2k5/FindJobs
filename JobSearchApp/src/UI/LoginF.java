@@ -89,6 +89,7 @@ public class LoginF extends JFrame implements ActionListener {
                     case 3: // Người tìm việc
                         new JobSeekerMainF(User.getUser_id());
                         break;
+
                 }
             }
             JOptionPane.showMessageDialog(this, r.getMessage());
