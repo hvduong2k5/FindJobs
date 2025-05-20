@@ -106,7 +106,7 @@ public class RegisterF extends JFrame implements ActionListener {
             }
             //code 
             UserBLL createUser = new UserBLL();
-            Response r = createUser.Register(name, username, password, role);
+            Response r = createUser.Register( username, password, name, role);
             if(r.isSuccess()) {
             	JOptionPane.showMessageDialog(this, r.getMessage());	
             }else {
