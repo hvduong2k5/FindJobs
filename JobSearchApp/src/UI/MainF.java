@@ -405,7 +405,7 @@ public class MainF extends JFrame implements ActionListener {
         JMenuItem miChangePass = new JMenuItem("Đổi mật khẩu");
         JMenuItem miLogout = new JMenuItem("Đăng xuất");
 
-        Font menuFont = new Font("Segoe UI", Font.PLAIN, 13);
+        Font menuFont = new Font("Segoe UI", Font.PLAIN, 24);
         Color menuItemFgColor = new Color(50,50,50);
 
         miProfile.setFont(menuFont); miProfile.setForeground(menuItemFgColor);
