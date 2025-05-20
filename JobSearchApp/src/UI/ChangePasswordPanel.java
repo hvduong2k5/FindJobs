@@ -1,6 +1,10 @@
  package UI;
+ import Util.Response;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import BLL.UserBLL;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,6 +19,7 @@ public class ChangePasswordPanel extends JPanel implements ActionListener {
     private JLabel lbOldPassword, lbNewPassword, lbConfirmPassword;
     private JPasswordField pfOldPassword, pfNewPassword, pfConfirmPassword;
     private JButton btnSaveChanges, btnClear;
+    private JCheckBox chkShowPassword;
 
     public ChangePasswordPanel(int userId) {
         this.userId = userId;
@@ -64,7 +69,10 @@ public class ChangePasswordPanel extends JPanel implements ActionListener {
         lbConfirmPassword.setForeground(labelColor);
         pfConfirmPassword = new JPasswordField(20);
         pfConfirmPassword.setFont(textFont);
+        
 
+        chkShowPassword = new JCheckBox("Hiện mật khẩu");
+        
         gbc.gridx = 0; gbc.gridy = 0; formPanel.add(lbOldPassword, gbc);
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; formPanel.add(pfOldPassword, gbc);
 
@@ -73,6 +81,9 @@ public class ChangePasswordPanel extends JPanel implements ActionListener {
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; formPanel.add(lbConfirmPassword, gbc);
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; formPanel.add(pfConfirmPassword, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; formPanel.add(new JLabel(""), gbc);
+        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; formPanel.add(chkShowPassword, gbc);
 
         add(formPanel, BorderLayout.CENTER);
 
@@ -101,8 +112,20 @@ public class ChangePasswordPanel extends JPanel implements ActionListener {
             pfOldPassword.setText("");
             pfNewPassword.setText("");
             pfConfirmPassword.setText("");
-        } else if (e.getSource() == btnSaveChanges) {
+        }
+        if (e.getSource() == btnSaveChanges) {
             handleChangePassword();
+        }
+        if (e.getSource() == chkShowPassword) {
+        	if (chkShowPassword.isSelected()) {
+                pfOldPassword.setEchoChar((char) 0);
+                pfNewPassword.setEchoChar((char) 0);
+                pfConfirmPassword.setEchoChar((char) 0);
+            } else {
+                pfOldPassword.setEchoChar('•');
+                pfNewPassword.setEchoChar('•');
+                pfConfirmPassword.setEchoChar('•');
+            }
         }
     }
 
@@ -126,66 +149,13 @@ public class ChangePasswordPanel extends JPanel implements ActionListener {
             pfNewPassword.requestFocus();
             return;
         }
-
-        // --- QUAN TRỌNG: Xử lý mật khẩu ---
-        // Trong thực tế, bạn cần:
-        // 1. Lấy mật khẩu ĐÃ BĂM (hashed password) từ CSDL.
-        // 2. Băm `oldPassword` người dùng nhập và so sánh với mật khẩu đã băm từ CSDL.
-        //    Ví dụ với jBCrypt: if (BCrypt.checkpw(oldPassword, hashedPasswordFromDB)) { ... }
-        // 3. Nếu hợp lệ, băm `newPassword` và cập nhật vào CSDL.
-        //    Ví dụ: String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        // Vì mục đích minh họa, phần này sẽ so sánh trực tiếp (KHÔNG AN TOÀN)
-        // Bạn PHẢI thay thế bằng logic băm mật khẩu.
-//
-//        String sqlCheckOldPass = "SELECT password FROM user WHERE user_id = ?";
-//        String sqlUpdatePass = "UPDATE user SET password = ? WHERE user_id = ?";
-//
-//        try (Connection conn = DBConnection.getConnection()) {
-//            conn.setAutoCommit(false); // Bắt đầu transaction
-//
-//            // Bước 1: Kiểm tra mật khẩu cũ (KHÔNG AN TOÀN - CẦN BĂM)
-//            try (PreparedStatement pstmtCheck = conn.prepareStatement(sqlCheckOldPass)) {
-//                pstmtCheck.setInt(1, this.userId);
-//                ResultSet rs = pstmtCheck.executeQuery();
-//                if (rs.next()) {
-//                    String currentPasswordFromDB = rs.getString("password");
-//                    // **** THAY THẾ PHẦN SO SÁNH NÀY BẰNG BĂM MẬT KHẨU ****
-//                    if (!currentPasswordFromDB.equals(oldPassword)) {
-//                    // Ví dụ đúng: if (!BCrypt.checkpw(oldPassword, currentPasswordFromDB)) {
-//                        JOptionPane.showMessageDialog(this, "Mật khẩu cũ không chính xác.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                        conn.rollback();
-//                        return;
-//                    }
-//                } else {
-//                    JOptionPane.showMessageDialog(this, "Không tìm thấy người dùng.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                    conn.rollback();
-//                    return;
-//                }
-//            }
-//
-//            // Bước 2: Cập nhật mật khẩu mới (KHÔNG AN TOÀN - CẦN BĂM)
-//            // String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt()); // Ví dụ
-//            try (PreparedStatement pstmtUpdate = conn.prepareStatement(sqlUpdatePass)) {
-//                pstmtUpdate.setString(1, newPassword); // Nên là hashedNewPassword
-//                pstmtUpdate.setInt(2, this.userId);
-//                int rowsAffected = pstmtUpdate.executeUpdate();
-//
-//                if (rowsAffected > 0) {
-//                    conn.commit();
-//                    JOptionPane.showMessageDialog(this, "Đổi mật khẩu thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-//                    pfOldPassword.setText("");
-//                    pfNewPassword.setText("");
-//                    pfConfirmPassword.setText("");
-//                } else {
-//                    conn.rollback();
-//                    JOptionPane.showMessageDialog(this, "Đổi mật khẩu thất bại. Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-//                }
-//            }
-//
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(this, "Lỗi CSDL khi đổi mật khẩu: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-//            // Cân nhắc rollback ở đây nếu conn chưa được đóng
-//        }
+        UserBLL updatePW = new UserBLL();
+        Response r = updatePW.updatePassword(userId, oldPassword, newPassword);
+        if(r.isSuccess()) {
+          pfOldPassword.setText("");
+          pfNewPassword.setText("");
+          pfConfirmPassword.setText("");
+        }
+        JOptionPane.showMessageDialog(this, r.getMessage());
     }
 }

@@ -1,57 +1,69 @@
- package UI;
+package UI;
 
+import BLL.*;
+import DTO.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.*;
+import javax.swing.table.*; // Cần cho JTable và TableModel
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-// Giả sử DBConnection.java và CategoryItem.java đã tồn tại trong cùng package
-// hoặc được import đúng cách
+import java.math.BigDecimal;
 
 public class MainF extends JFrame implements ActionListener {
 
-    // ... (Các khai báo biến cũ giữ nguyên)
     private JPanel headerPanel, controlPanel, mainContentPanel;
     private JLabel lbTitle;
     private JTextField txtSearch;
     private JButton btnSearch, btnLogin, btnRegister, btnSetting, btnCreateJob, btnSaveJob, btnViewJobs;
 
-    // Cho Job List (sẽ được dùng lại cho cả hiển thị job theo category và kết quả search)
-    private JTable tblJobList;
-    private DefaultTableModel tableModel;
-    private JLabel lbCurrentJobListViewTitle; // Label để hiển thị "Việc làm ngành X" hoặc "Kết quả tìm kiếm"
+    private JTable tblJobList; // Bảng hiển thị công việc (giữ nguyên)
+    private DefaultTableModel tableModel; // Model cho bảng công việc (giữ nguyên)
+    private JLabel lbCurrentJobListViewTitle;
 
     private static int user_id = -1;
     private static int role = 0;
 
-    private CardLayout cardLayout; // CardLayout cho mainContentPanel
+    private CardLayout cardLayout;
     private JPanel jobListDisplayPanel, savedJobsPanel, createJobPanel;
     private ProfilePanel profilePanel;
     private ChangePasswordPanel changePWPanel;
 
-    // Components cho phần hiển thị ngành nghề và công việc trong jobListDisplayPanel
-    private CardLayout jobPanelInternalCardLayout; // CardLayout bên trong jobListDisplayPanel
-    private JPanel jobPanelContainer; // Panel chứa categorySubPanel và jobsSubPanel
+    private CardLayout jobPanelInternalCardLayout;
+    private JPanel jobPanelContainer;
     private JPanel categorySubPanel;
     private JPanel jobsSubPanel;
-//    private JList<CategoryItem> listCategories;
-//    private DefaultListModel<CategoryItem> categoryListModel;
+
+    // --- THAY ĐỔI: Từ JList sang JTable để hiển thị ngành nghề ---
+    // private JList<CategoryDTO> listCategories;
+    // private DefaultListModel<CategoryDTO> categoryListModel;
+    private JTable tblCategories; // MỚI: Bảng hiển thị ngành nghề
+    private DefaultTableModel categoryTableModel; // MỚI: Model cho bảng ngành nghề
+    // --- KẾT THÚC THAY ĐỔI ---
     private JButton btnBackToCategories;
 
+    private CategoryBLL categoryBLL;
+    private JobBLL jobBLL;
 
     public MainF(String title, int id, int rl) {
         super(title);
         MainF.user_id = id;
         MainF.role = rl;
+
+        try {
+            categoryBLL = new CategoryBLL();
+            jobBLL = new JobBLL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khởi tạo lớp xử lý nghiệp vụ: " + e.getMessage() +
+                "\nỨng dụng có thể không hoạt động đúng.",
+                "Lỗi nghiêm trọng", JOptionPane.ERROR_MESSAGE);
+        }
+
         initLookAndFeel();
         GUI();
     }
@@ -75,11 +87,10 @@ public class MainF extends JFrame implements ActionListener {
     }
 
     public void GUI() {
-        // ... (Phần headerPanel, controlPanel giữ nguyên như code trước)
+        // ... (Các phần headerPanel, controlPanel, mainContentPanel khởi tạo giữ nguyên) ...
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(1300, 750)); // Có thể tăng chiều cao một chút
+        setPreferredSize(new Dimension(1300, 750));
 
-        // === HEADER PANEL ===
         headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         headerPanel.setBackground(new Color(0, 102, 204));
         lbTitle = new JLabel("ỨNG DỤNG TÌM KIẾM VIỆC LÀM");
@@ -88,7 +99,6 @@ public class MainF extends JFrame implements ActionListener {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         headerPanel.add(lbTitle);
 
-        // === CONTROL PANEL (Tìm kiếm và các nút chính) ===
         controlPanel = new JPanel(new BorderLayout(15, 10));
         controlPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
         controlPanel.setBackground(new Color(245, 245, 245));
@@ -115,7 +125,7 @@ public class MainF extends JFrame implements ActionListener {
         buttonsGroupPanel.setOpaque(false);
         btnLogin = new JButton("Đăng nhập");
         btnRegister = new JButton("Đăng ký");
-        btnViewJobs = new JButton("Việc làm theo ngành"); // Đổi tên nút
+        btnViewJobs = new JButton("Việc làm theo ngành");
         btnSaveJob = new JButton("Việc làm đã lưu");
         btnCreateJob = new JButton("Đăng tin");
         btnSetting = new JButton("Cài đặt");
@@ -132,35 +142,29 @@ public class MainF extends JFrame implements ActionListener {
         }
         controlPanel.add(buttonsGroupPanel, BorderLayout.EAST);
 
-
-        // === MAIN CONTENT PANEL (Sử dụng CardLayout) ===
         cardLayout = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
         mainContentPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
         mainContentPanel.setBackground(Color.WHITE);
 
-        // --- Panel danh sách công việc (Bao gồm chọn ngành và hiển thị việc) ---
-        jobListDisplayPanel = createJobListPanel(); // Hàm này sẽ được viết lại
-        mainContentPanel.add(jobListDisplayPanel, "JobListFlow"); // Đổi tên key
+        jobListDisplayPanel = createJobListPanel();
+        mainContentPanel.add(jobListDisplayPanel, "JobListFlow");
 
-        // --- Các panel khác ---
-        savedJobsPanel = new SavedJobsPanel(MainF.user_id);
-        createJobPanel = new CreateJobPanel(MainF.user_id);
-        profilePanel = new ProfilePanel(MainF.user_id);
-        changePWPanel = new ChangePasswordPanel(MainF.user_id);
+        savedJobsPanel =  new SavedJobsPanel(MainF.user_id);
+        createJobPanel =  new CreateJobPanel(MainF.user_id);
+        profilePanel =  new ProfilePanel(MainF.user_id);
+        changePWPanel =  new ChangePasswordPanel(MainF.user_id);
 
         mainContentPanel.add(savedJobsPanel, "SavedJobs");
         mainContentPanel.add(createJobPanel, "CreateJob");
         mainContentPanel.add(profilePanel, "Profile");
         mainContentPanel.add(changePWPanel, "ChangePassword");
 
-        // === ADD PANELS TO FRAME ===
         this.setLayout(new BorderLayout(0, 0));
         this.add(headerPanel, BorderLayout.NORTH);
         this.add(mainContentPanel, BorderLayout.CENTER);
         this.add(controlPanel, BorderLayout.SOUTH);
 
-        // === ACTION LISTENERS ===
         btnSearch.addActionListener(this);
         btnLogin.addActionListener(this);
         btnRegister.addActionListener(this);
@@ -171,19 +175,23 @@ public class MainF extends JFrame implements ActionListener {
 
         updateButtonVisibility();
         JPopupMenu menu = createSettingMenu();
-        btnSetting.addActionListener(e -> menu.show(btnSetting, 0, -menu.getPreferredSize().height));
+        btnSetting.addActionListener(e -> {
+            if (btnSetting.isVisible()){
+                 menu.show(btnSetting, 0, -menu.getPreferredSize().height);
+            }
+        });
 
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
 
-        // Mặc định hiển thị danh sách ngành nghề khi khởi động hoặc khi nhấn "Việc làm theo ngành"
         cardLayout.show(mainContentPanel, "JobListFlow");
         jobPanelInternalCardLayout.show(jobPanelContainer, "CategoriesView");
         loadCategoriesData();
     }
 
-    private void updateButtonVisibility() { /* Giữ nguyên */
+    private void updateButtonVisibility() {
+        // ... (Giữ nguyên)
         boolean isLoggedIn = (MainF.role > 0);
         boolean isGuest = (MainF.role == 0);
         boolean isHR = (MainF.role == 2);
@@ -197,52 +205,80 @@ public class MainF extends JFrame implements ActionListener {
         btnViewJobs.setVisible(true);
     }
 
-    // ** HÀM NÀY ĐƯỢC VIẾT LẠI HOÀN TOÀN **
+    // SỬA ĐỔI PHƯƠNG THỨC NÀY
     private JPanel createJobListPanel() {
-        JPanel mainPanelForJobs = new JPanel(new BorderLayout(0,10)); // Panel chính trả về
+        JPanel mainPanelForJobs = new JPanel(new BorderLayout(0, 10));
         mainPanelForJobs.setOpaque(false);
 
         jobPanelInternalCardLayout = new CardLayout();
-        jobPanelContainer = new JPanel(jobPanelInternalCardLayout); // Panel dùng CardLayout nội bộ
+        jobPanelContainer = new JPanel(jobPanelInternalCardLayout);
         jobPanelContainer.setOpaque(false);
 
-        // 1. Sub-panel hiển thị danh sách ngành nghề (CategoriesView)
-        categorySubPanel = new JPanel(new BorderLayout(10,10));
+        // 1. Sub-panel hiển thị danh sách ngành nghề (CategoriesView) - SỬ DỤNG JTABLE
+        categorySubPanel = new JPanel(new BorderLayout(10, 10));
         categorySubPanel.setOpaque(false);
-        categorySubPanel.setBorder(new EmptyBorder(5,5,5,5));
+        categorySubPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
         JLabel categoryTitle = new JLabel("Chọn một ngành nghề để xem việc làm:", SwingConstants.LEFT);
         categoryTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         categorySubPanel.add(categoryTitle, BorderLayout.NORTH);
 
-//        categoryListModel = new DefaultListModel<>();
-//        listCategories = new JList<>(categoryListModel);
-//        listCategories.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-//        listCategories.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-//        listCategories.setBorder(BorderFactory.createLineBorder(new Color(200,200,200)));
-//        listCategories.addListSelectionListener(new ListSelectionListener() {
-//            @Override
-//            public void valueChanged(ListSelectionEvent e) {
-//                if (!e.getValueIsAdjusting() && listCategories.getSelectedValue() != null) {
-//                    CategoryItem selectedCategory = listCategories.getSelectedValue();
-//                    loadJobsForCategory(selectedCategory.getId(), selectedCategory.getName());
-//                    jobPanelInternalCardLayout.show(jobPanelContainer, "JobsView");
-//                }
-//            }
-//        });
-//        categorySubPanel.add(new JScrollPane(listCategories), BorderLayout.CENTER);
+        // --- BẮT ĐẦU THAY ĐỔI: Sử dụng JTable cho Categories ---
+        String[] categoryColumnNames = {"ID Ngành", "Tên Ngành Nghề"}; // Các cột cho bảng ngành nghề
+        categoryTableModel = new DefaultTableModel(categoryColumnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Không cho phép sửa trực tiếp trên bảng
+            }
+        };
+        tblCategories = new JTable(categoryTableModel);
+        tblCategories.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Điều chỉnh font nếu cần
+        tblCategories.setRowHeight(28); // Điều chỉnh chiều cao hàng
+        tblCategories.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Chỉ cho chọn 1 hàng
+        tblCategories.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tblCategories.getTableHeader().setBackground(new Color(230, 230, 230));
+        tblCategories.getTableHeader().setForeground(new Color(50, 50, 50));
+        tblCategories.setFillsViewportHeight(true); // Đảm bảo bảng tô đầy không gian nếu ít hàng
+
+        // Tùy chỉnh độ rộng cột (ví dụ)
+        TableColumnModel categoryTCM = tblCategories.getColumnModel();
+        categoryTCM.getColumn(0).setPreferredWidth(80);  // Cột ID
+        categoryTCM.getColumn(0).setMaxWidth(100);
+        categoryTCM.getColumn(1).setPreferredWidth(350); // Cột Tên Ngành
+
+        // Thêm sự kiện lắng nghe lựa chọn hàng trên bảng
+        tblCategories.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                // Đảm bảo sự kiện chỉ được xử lý một lần và có hàng được chọn
+                if (!e.getValueIsAdjusting() && tblCategories.getSelectedRow() != -1) {
+                    int selectedRow = tblCategories.getSelectedRow();
+                    // Lấy categoryId và categoryName từ hàng được chọn trong table model
+                    // Giả sử cột 0 là ID, cột 1 là Name
+                    int categoryId = (int) categoryTableModel.getValueAt(selectedRow, 0);
+                    String categoryName = (String) categoryTableModel.getValueAt(selectedRow, 1);
+
+                    loadJobsForCategory(categoryId, categoryName);
+                    jobPanelInternalCardLayout.show(jobPanelContainer, "JobsView");
+                }
+            }
+        });
+
+        JScrollPane categoryScrollPane = new JScrollPane(tblCategories);
+        categoryScrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        categorySubPanel.add(categoryScrollPane, BorderLayout.CENTER);
+        // --- KẾT THÚC THAY ĐỔI ---
+
         jobPanelContainer.add(categorySubPanel, "CategoriesView");
 
-
-        // 2. Sub-panel hiển thị danh sách công việc (JobsView)
+        // 2. Sub-panel hiển thị danh sách công việc (JobsView) - Giữ nguyên
         jobsSubPanel = new JPanel(new BorderLayout(0, 10));
         jobsSubPanel.setOpaque(false);
-        jobsSubPanel.setBorder(new EmptyBorder(5,5,5,5));
+        jobsSubPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-        // Panel chứa tiêu đề và nút Back
         JPanel jobsHeaderPanel = new JPanel(new BorderLayout());
         jobsHeaderPanel.setOpaque(false);
-        lbCurrentJobListViewTitle = new JLabel("Danh sách việc làm", SwingConstants.LEFT); // Sẽ được cập nhật
+        lbCurrentJobListViewTitle = new JLabel("Danh sách việc làm", SwingConstants.LEFT);
         lbCurrentJobListViewTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         jobsHeaderPanel.add(lbCurrentJobListViewTitle, BorderLayout.CENTER);
 
@@ -250,18 +286,18 @@ public class MainF extends JFrame implements ActionListener {
         btnBackToCategories.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnBackToCategories.addActionListener(e -> {
             jobPanelInternalCardLayout.show(jobPanelContainer, "CategoriesView");
-//            listCategories.clearSelection(); // Bỏ chọn item cũ
+            txtSearch.setText("");
+            tblCategories.clearSelection(); // Bỏ chọn trên bảng ngành nghề
         });
         jobsHeaderPanel.add(btnBackToCategories, BorderLayout.EAST);
         jobsSubPanel.add(jobsHeaderPanel, BorderLayout.NORTH);
 
-        // Table hiển thị công việc (tái sử dụng từ code cũ)
+        // Cấu hình bảng công việc (tblJobList) - Giữ nguyên
         String[] columnNames = {"Vị trí", "Công ty", "Mức lương", "Địa điểm", "Mô tả"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         tblJobList = new JTable(tableModel);
-        // ... (các cài đặt cho tblJobList như setFont, setRowHeight, getTableHeader, etc. giữ nguyên)
         tblJobList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tblJobList.setRowHeight(30);
         tblJobList.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -273,12 +309,19 @@ public class MainF extends JFrame implements ActionListener {
         DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
         cellRenderer.setBorder(new EmptyBorder(0, 5, 0, 5));
         for (int i = 0; i < tblJobList.getColumnCount(); i++) {
-            if (tblJobList.getColumnModel().getColumnCount() > i) // Kiểm tra tồn tại cột
+            if (tblJobList.getColumnModel().getColumnCount() > i)
                  tblJobList.getColumnModel().getColumn(i).setCellRenderer(cellRenderer);
         }
+        TableColumnModel jobColumnModel = tblJobList.getColumnModel();
+        jobColumnModel.getColumn(0).setPreferredWidth(200);
+        jobColumnModel.getColumn(1).setPreferredWidth(150);
+        jobColumnModel.getColumn(2).setPreferredWidth(100);
+        jobColumnModel.getColumn(3).setPreferredWidth(150);
+        jobColumnModel.getColumn(4).setPreferredWidth(300);
+        tblJobList.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         JScrollPane scrollPane = new JScrollPane(tblJobList);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200,200,200)));
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
         jobsSubPanel.add(scrollPane, BorderLayout.CENTER);
         jobPanelContainer.add(jobsSubPanel, "JobsView");
 
@@ -286,55 +329,74 @@ public class MainF extends JFrame implements ActionListener {
         return mainPanelForJobs;
     }
 
+    // SỬA ĐỔI PHƯƠNG THỨC NÀY
     private void loadCategoriesData() {
-//        categoryListModel.clear();
-//        String sql = "SELECT category_id, category_name FROM category ORDER BY category_name";
-//        try (Connection conn = DBConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql);
-//             ResultSet rs = pstmt.executeQuery()) {
-//            while (rs.next()) {
-//                categoryListModel.addElement(new CategoryItem(rs.getInt("category_id"), rs.getString("category_name")));
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách ngành nghề: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-//        }
+        if (categoryBLL == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: CategoryBLL chưa được khởi tạo.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        // --- THAY ĐỔI: Đổ dữ liệu vào categoryTableModel ---
+        categoryTableModel.setRowCount(0); // Xóa dữ liệu cũ trên bảng ngành nghề
+
+        try {
+            List<CategoryDTO> listCategory = categoryBLL.getAllCategories();
+            if (listCategory != null && !listCategory.isEmpty()) {
+                for (CategoryDTO categoryDTO : listCategory) {
+                    // Thêm một hàng mới vào bảng ngành nghề
+                    // Đảm bảo thứ tự khớp với categoryColumnNames
+                    categoryTableModel.addRow(new Object[]{
+                        categoryDTO.getCategoryId(),    // ID Ngành
+                        categoryDTO.getCategoryName()   // Tên Ngành Nghề
+                    });
+                }
+            } else if (listCategory == null) {
+                 JOptionPane.showMessageDialog(this, "Không thể tải danh sách ngành nghề. Có lỗi xảy ra.", "Lỗi tải dữ liệu", JOptionPane.WARNING_MESSAGE);
+            }
+            // Nếu listCategory rỗng, bảng sẽ trống, không cần thông báo đặc biệt.
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách ngành nghề: " + e.getMessage(), "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+        }
+        // --- KẾT THÚC THAY ĐỔI ---
     }
 
     private void loadJobsForCategory(int categoryId, String categoryName) {
-        tableModel.setRowCount(0); // Xóa dữ liệu cũ
-        lbCurrentJobListViewTitle.setText("Việc làm trong ngành: " + categoryName);
-        btnBackToCategories.setVisible(true); // Hiển thị nút back khi xem job theo category
+        if (jobBLL == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: JobBLL chưa được khởi tạo.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        tableModel.setRowCount(0);
+        lbCurrentJobListViewTitle.setText("Việc làm trong ngành: " + categoryName); // Bạn có thể thêm ID nếu muốn: + " (ID: " + categoryId + ")"
+        btnBackToCategories.setVisible(true);
 
-//        String sql = "SELECT j.job_id, j.job_name, j.salary, j.company_name, j.description, j.address " +
-//                     "FROM job j " +
-//                     "JOIN categoryofjob coj ON j.job_id = coj.job_id " +
-//                     "WHERE coj.category_id = ? AND j.is_public = 1"; // Chỉ lấy job public
-//        try (Connection conn = DBConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setInt(1, categoryId);
-//            ResultSet rs = pstmt.executeQuery();
-//            boolean found = false;
-//            while (rs.next()) {
-//                found = true;
-//                tableModel.addRow(new Object[]{
-//                        rs.getString("job_name"),
-//                        rs.getString("company_name"),
-//                        rs.getBigDecimal("salary") != null ? rs.getBigDecimal("salary").toString() + " (triệu)" : "Thỏa thuận",
-//                        rs.getString("address"),
-//                        rs.getString("description")
-//                });
-//            }
-//            if (!found) {
-//                 tableModel.addRow(new Object[]{"Không có việc làm nào trong ngành này.", "", "", "", ""});
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách việc làm: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-//        }
+        try {
+            List<JobDTO> jobs = jobBLL.searchJobs(categoryName);
+            if (jobs != null && !jobs.isEmpty()) {
+                for (JobDTO job : jobs) {
+                    tableModel.addRow(new Object[]{
+                            job.getJobName(),
+                            job.getCompanyName(),
+                            job.getSalary(),
+                            job.getAddress(),
+                            job.getDescription()
+                    });
+                }
+            } else if (jobs == null) {
+                JOptionPane.showMessageDialog(this, "Không thể tải danh sách việc làm. Có lỗi xảy ra.", "Lỗi tải dữ liệu", JOptionPane.WARNING_MESSAGE);
+                tableModel.addRow(new Object[]{"Lỗi tải dữ liệu.", "", "", "", ""});
+            }
+            else {
+                 tableModel.addRow(new Object[]{"Không có việc làm nào trong ngành này.", "", "", "", ""});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tải danh sách việc làm: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
+             tableModel.addRow(new Object[]{"Lỗi tải dữ liệu: " + e.getMessage(), "", "", "", ""});
+        }
     }
 
-    private JPopupMenu createSettingMenu() { /* Giữ nguyên */
+    private JPopupMenu createSettingMenu() {
+        // ... (Giữ nguyên)
         JPopupMenu menu = new JPopupMenu();
         menu.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
         menu.setBackground(new Color(250,250,250));
@@ -359,34 +421,16 @@ public class MainF extends JFrame implements ActionListener {
             if (MainF.user_id == -1) {
                 JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập.", "Yêu cầu", JOptionPane.INFORMATION_MESSAGE); return;
             }
-            profilePanel = new ProfilePanel(MainF.user_id); // Refresh panel
-            if (mainContentPanel.getLayout() instanceof CardLayout) { // Ensure profilePanel is added if not present
-                boolean found = false;
-                for (Component comp : mainContentPanel.getComponents()) {
-                    if (comp == profilePanel) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) mainContentPanel.add(profilePanel, "Profile");
-            }
+            profilePanel = new ProfilePanel(MainF.user_id);
+            mainContentPanel.add(profilePanel, "Profile");
             cardLayout.show(mainContentPanel, "Profile");
         });
         miChangePass.addActionListener(e -> {
             if (MainF.user_id == -1) {
                  JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập.", "Yêu cầu", JOptionPane.INFORMATION_MESSAGE); return;
             }
-            changePWPanel = new ChangePasswordPanel(MainF.user_id); // Refresh panel
-            if (mainContentPanel.getLayout() instanceof CardLayout) { // Ensure changePWPanel is added if not present
-                boolean found = false;
-                for (Component comp : mainContentPanel.getComponents()) {
-                    if (comp == changePWPanel) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) mainContentPanel.add(changePWPanel, "ChangePassword");
-            }
+            changePWPanel = new ChangePasswordPanel(MainF.user_id);
+            mainContentPanel.add(changePWPanel, "ChangePassword");
             cardLayout.show(mainContentPanel, "ChangePassword");
         });
 
@@ -395,8 +439,6 @@ public class MainF extends JFrame implements ActionListener {
                     "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
-                MainF.user_id = -1;
-                MainF.role = 0;
                 this.dispose();
                 SwingUtilities.invokeLater(() -> new MainF("Ứng dụng Tìm việc làm - Khách", -1, 0));
             }
@@ -408,10 +450,10 @@ public class MainF extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
 
-        if (source == btnLogin) { /* Giữ nguyên */
+        if (source == btnLogin) {
             this.dispose();
             SwingUtilities.invokeLater(() -> new LoginF("Đăng nhập"));
-        } else if (source == btnRegister) { /* Giữ nguyên */
+        } else if (source == btnRegister) {
             this.dispose();
             SwingUtilities.invokeLater(() -> new RegisterF("Đăng ký"));
         } else if (source == btnSearch) {
@@ -421,76 +463,71 @@ public class MainF extends JFrame implements ActionListener {
                 txtSearch.requestFocus();
                 return;
             }
-            cardLayout.show(mainContentPanel, "JobListFlow"); // Chuyển sang panel chứa luồng job
-            performSearch(keyword); // Hàm tìm kiếm sẽ trực tiếp hiển thị kết quả vào job table
-            jobPanelInternalCardLayout.show(jobPanelContainer, "JobsView"); // Hiển thị view job
-        } else if (source == btnSaveJob) { /* Giữ nguyên */
+            cardLayout.show(mainContentPanel, "JobListFlow");
+            performSearch(keyword);
+            jobPanelInternalCardLayout.show(jobPanelContainer, "JobsView");
+        } else if (source == btnSaveJob) {
              if (MainF.role == 0) {
-                 JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập.", "Yêu cầu", JOptionPane.INFORMATION_MESSAGE); return;
+                 JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập để sử dụng chức năng này.", "Yêu cầu", JOptionPane.INFORMATION_MESSAGE); return;
             }
             cardLayout.show(mainContentPanel, "SavedJobs");
-        } else if (source == btnCreateJob) { /* Giữ nguyên */
+        } else if (source == btnCreateJob) {
             if (MainF.role != 2) {
                  JOptionPane.showMessageDialog(this, "Chỉ Nhà tuyển dụng mới có quyền đăng tin.", "Không có quyền", JOptionPane.WARNING_MESSAGE); return;
             }
             cardLayout.show(mainContentPanel, "CreateJob");
-        } else if (source == btnViewJobs) { // Nút "Việc làm theo ngành"
+        } else if (source == btnViewJobs) {
             cardLayout.show(mainContentPanel, "JobListFlow");
-            jobPanelInternalCardLayout.show(jobPanelContainer, "CategoriesView"); // Hiển thị view chọn ngành
-            loadCategoriesData(); // Tải lại danh sách ngành nghề
+            jobPanelInternalCardLayout.show(jobPanelContainer, "CategoriesView");
+            loadCategoriesData(); // Tải lại dữ liệu vào bảng ngành nghề
             txtSearch.setText("");
+            tblCategories.clearSelection(); // Bỏ chọn trên bảng ngành nghề
         }
     }
 
     private void performSearch(String keyword) {
+        if (jobBLL == null) {
+            JOptionPane.showMessageDialog(this, "Lỗi: JobBLL chưa được khởi tạo.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         tableModel.setRowCount(0);
         lbCurrentJobListViewTitle.setText("Kết quả tìm kiếm cho: \"" + keyword + "\"");
-        btnBackToCategories.setVisible(true); // Cho phép quay lại danh sách ngành
+        // btnBackToCategories.setVisible(true); // Có thể ẩn hoặc thay đổi chức năng nút này sau khi tìm kiếm
 
-//        // Câu SQL tìm kiếm (ví dụ đơn giản, bạn có thể làm phức tạp hơn với LIKE trên nhiều cột)
-//        String sql = "SELECT job_id, job_name, salary, company_name, description, address " +
-//                     "FROM job " +
-//                     "WHERE (job_name LIKE ? OR company_name LIKE ? OR description LIKE ? OR requirement LIKE ? OR address LIKE ?) " +
-//                     "AND is_public = 1";
-//        try (Connection conn = DBConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//            String searchTerm = "%" + keyword + "%";
-//            for (int i = 1; i <= 5; i++) { // 5 placeholders cho LIKE
-//                pstmt.setString(i, searchTerm);
-//            }
-//            ResultSet rs = pstmt.executeQuery();
-//            boolean found = false;
-//            while (rs.next()) {
-//                found = true;
-//                tableModel.addRow(new Object[]{
-//                    rs.getString("job_name"),
-//                    rs.getString("company_name"),
-//                    rs.getBigDecimal("salary") != null ? rs.getBigDecimal("salary").toString() + " (triệu)" : "Thỏa thuận",
-//                    rs.getString("address"),
-//                    rs.getString("description")
-//                });
-//            }
-//            if (!found) {
-//                tableModel.addRow(new Object[]{"Không tìm thấy công việc nào với từ khóa '" + keyword + "'.", "", "", "", ""});
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(this, "Lỗi khi tìm kiếm: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-//        }
+        try {
+            List<JobDTO> jobs = jobBLL.searchJobs(keyword);
+            if (jobs != null && !jobs.isEmpty()) {
+                for (JobDTO job : jobs) {
+                    tableModel.addRow(new Object[]{
+                        job.getJobName(),
+                        job.getCompanyName(),
+                        job.getSalary(),
+                        job.getAddress(),
+                        job.getDescription()
+                    });
+                }
+            } else if (jobs == null) {
+                 JOptionPane.showMessageDialog(this, "Lỗi khi thực hiện tìm kiếm.", "Lỗi tìm kiếm", JOptionPane.WARNING_MESSAGE);
+                 tableModel.addRow(new Object[]{"Lỗi tìm kiếm.", "", "", "", ""});
+            }
+            else {
+                tableModel.addRow(new Object[]{"Không tìm thấy công việc nào với từ khóa '" + keyword + "'.", "", "", "", ""});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi tìm kiếm: " + e.getMessage(), "Lỗi hệ thống", JOptionPane.ERROR_MESSAGE);
+            tableModel.addRow(new Object[]{"Lỗi hệ thống: " + e.getMessage(), "", "", "", ""});
+        }
     }
 
-    public static void main(String[] args) { /* Giữ nguyên */
-        SwingUtilities.invokeLater(() -> {
-            int initialUserId = 102;
-            int initialRole = 2;
-            String frameTitle = "Ứng dụng Tìm việc làm";
-            switch (initialRole) {
-                case 0: frameTitle += " - Khách"; break;
-                case 2: frameTitle += " - Nhà tuyển dụng"; break;
-                case 3: frameTitle += " - Người tìm việc"; break;
-                case 1: frameTitle += " - Quản trị viên"; break;
-            }
-            new MainF(frameTitle, initialUserId, initialRole);
-        });
+    public static void main(String[] args) {
+    	String frameTitle = "Ứng dụng Tìm việc làm";
+        switch (role) {
+    	case 0: frameTitle += " - Khách"; break;
+    	case 2: frameTitle += " - Nhà tuyển dụng"; break;
+    	case 3: frameTitle += " - Người tìm việc"; break;
+    	case 1: frameTitle += " - Quản trị viên"; break;
+    	}
+        new MainF(frameTitle, user_id, role);
     }
 }

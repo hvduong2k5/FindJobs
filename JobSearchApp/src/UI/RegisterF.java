@@ -1,9 +1,9 @@
 package UI;
-
+import BLL.UserBLL;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-
+import Util.Response;
 public class RegisterF extends JFrame implements ActionListener {
     private JLabel lbName,lbUsername,lbPassword,lbConfirm;
     private JTextField txtName,txtUsername;
@@ -11,6 +11,7 @@ public class RegisterF extends JFrame implements ActionListener {
     private JButton btnRegister,btnBack;
     private JCheckBox chkShowPassword;
     private JPanel mainPanel;
+    private Choice ch;
 
     public RegisterF(String title) {
         super(title);
@@ -28,6 +29,9 @@ public class RegisterF extends JFrame implements ActionListener {
         txtPassword = new JPasswordField();
         txtConfirm  =new JPasswordField();
 
+        ch = new Choice();
+        ch.add("người tìm việc");
+        ch.add("người tuyển dụng");
         chkShowPassword = new JCheckBox("Hiện mật khẩu");
 
         btnRegister = new JButton("Đăng ký");
@@ -48,7 +52,7 @@ public class RegisterF extends JFrame implements ActionListener {
         mainPanel.add(lbConfirm);
         mainPanel.add(txtConfirm);
 
-        mainPanel.add(new JLabel()); // khoảng trống
+        mainPanel.add(ch); // khoảng trống
         mainPanel.add(chkShowPassword);
 
         mainPanel.add(btnRegister);
@@ -87,8 +91,27 @@ public class RegisterF extends JFrame implements ActionListener {
                 JOptionPane.showMessageDialog(this, "Mật khẩu xác nhận không khớp!");
                 return;
             }
+            int role = -1;
+            String txtRole = ch.getSelectedItem();
+            switch (txtRole) {
+            case "người tìm việc":
+            	role = 3;
+            	break;
+            case "người tuyển dụng":
+            	role = 2;
+            	break;
+            default:
+            	//
+            	break;
+            }
             //code 
-            JOptionPane.showMessageDialog(this, "Đăng ký thành công!");
+            UserBLL createUser = new UserBLL();
+            Response r = createUser.Register(name, username, password, role);
+            if(r.isSuccess()) {
+            	JOptionPane.showMessageDialog(this, r.getMessage());	
+            }else {
+            	JOptionPane.showMessageDialog(this, r.getMessage());
+            }
             this.dispose();
             new LoginF("Đăng nhập"); 
             

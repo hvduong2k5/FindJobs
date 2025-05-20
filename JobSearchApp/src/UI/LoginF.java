@@ -1,6 +1,11 @@
 package UI;
 
 import javax.swing.*;
+import DTO.UserDTO;
+import BLL.UserSession;
+import BLL.UserBLL;
+import Util.Response;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -69,28 +74,23 @@ public class LoginF extends JFrame implements ActionListener {
         if (e.getSource() == btnLogin) {
             String user = txtUsername.getText();
             String pass = new String(txtPassword.getPassword());
-
-            if (user.equals("admin") && pass.equals("123")) {
-                JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
-                this.dispose();
-                int user_id = 3;
-                //
-                //lấy thông tin người dùng user.role
-                //
-                int role =3;//1/2/3
-                switch(role) {
+            UserBLL loginUser = new UserBLL();
+            Response r = loginUser.Login(user, pass);
+            if(r.isSuccess()) {
+            	UserDTO User = UserSession.GetUser();
+            	UserSession.GetInstance().setCurrentUser(User);// lưu thông tin người dùng hiện tại
+            	this.dispose();
+                switch(User.getRole()) {
                 case 1:
+                	new AdminF("Quản lý ứng dụng tìm kiếm việc làm",User.getUser_id());
                 	break;
                 case 2:
-                	break;
                 case 3:
-                    new MainF("Ứng dụng Tìm kiếm Việc làm",user_id,role);
+                    new MainF("Ứng dụng Tìm kiếm Việc làm",User.getUser_id(),User.getRole());
                 	break;
                 }
-                
-            } else {
-                JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
             }
+            JOptionPane.showMessageDialog(this, r.getMessage());
         }
         if (e.getSource() == btnRegister) {
         		this.dispose();
