@@ -34,7 +34,16 @@ public class UserBLL {
             if (existingUser != null) {
                 return Response.Error("Tên tài khoản đã tồn tại.");// "", 409, null);
             }
-
+            if (account.length() < 6) {
+                return Response.Error("Tên tài khoản phải có ít nhất 6 ký tự.");
+            }
+            // Pattern.matches("^[a-z]+$", account) kiểm tra account chỉ chứa chữ thường từ a đến z
+            if (!account.matches("^[a-z]+$")) {
+                return Response.Error("Tên tài khoản chỉ được chứa các chữ cái viết thường (a-z).");
+            }
+            if(password.length()<6) {
+            	return Response.Error("Mật khẩu phải có ít nhất 6 ký tự.");
+            }
             UserDTO newUser = new UserDTO();
             newUser.setAccount(account);
             newUser.setPassword(BCrypt.hashpw(password, BCrypt.gensalt(12))); // Sử dụng salt round chuẩn
@@ -106,6 +115,9 @@ public class UserBLL {
                 return Response.Error("Mật khẩu mới không được để trống.");// "", 400);
             }
 
+            if(newPassword.length()<6) {
+            	return Response.Error("Mật khẩu phải có ít nhất 6 ký tự.");
+            }
             UserDTO userToUpdate = dal.SelectById(userId);
             if (userToUpdate == null) {
                 return Response.Error("Tài khoản không tồn tại.");//  "", 404);
@@ -216,6 +228,16 @@ public class UserBLL {
         try {
             if (account == null || account.isEmpty() || password == null || password.isEmpty()) {
                 return Response.Error("Thông tin không được để trống.");// "", 400);
+            }
+            if (account.length() < 6) {
+                return Response.Error("Tên tài khoản phải có ít nhất 6 ký tự.");
+            }
+            if(password.length()<6) {
+            	return Response.Error("Mật khẩu phải có ít nhất 6 ký tự.");
+            }
+            // Pattern.matches("^[a-z]+$", account) kiểm tra account chỉ chứa chữ thường từ a đến z
+            if (!account.matches("^[a-z]+$")) {
+                return Response.Error("Tên tài khoản chỉ được chứa các chữ cái viết thường (a-z).");
             }
 
             UserDTO user = dal.SelectByAccount(account);
