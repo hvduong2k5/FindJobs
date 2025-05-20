@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import DTO.UserApplyJobDTO;
+import DTO.UserSaveJobDTO;
 
 public class UserApplyJobDAL {
 
@@ -133,6 +134,40 @@ public class UserApplyJobDAL {
         }
         return false; 
     }
+	
+	public UserApplyJobDTO SelectByUserIdJobId(int userId, int JobId)
+	{
+		Connection conn = null;
+		try {
+			conn = DBUtil.MakeConnection();
+			String sql = "select * from userapplyjob where user_id = ? and job_id = ?";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, userId);
+			ps.setInt(2, JobId);
+			ResultSet rs = ps.executeQuery();
+			UserApplyJobDTO usj = null;
+			if(rs.next())
+			{
+				usj = (new UserApplyJobDTO(
+                        rs.getInt("user_apply_job_id"),
+                        rs.getInt("user_id"),
+                        rs.getInt("job_id"),
+                        rs.getString("cv_link"),
+                        rs.getInt("state_id")));
+			}
+			rs.close();
+			ps.close();
+			return usj;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			DBUtil.CloseConnection(conn);
+		}
+		return null;
+	}
 	public boolean IsApplied(int userId, int jobId) {
         Connection conn = null;
   
@@ -156,14 +191,15 @@ public class UserApplyJobDAL {
         }
         return false; 
     }
-	public boolean Delete(int applyJobId) {
+	public boolean Delete(int userId,int jobId) {
         Connection conn = null;
  
         try {
             conn = DBUtil.MakeConnection();
-            String sql = "DELETE FROM userapplyjob WHERE user_apply_job_id = ?";
+            String sql = "DELETE FROM userapplyjob WHERE user_id = ? and job_id = ?";
             PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, applyJobId);
+            ps.setInt(1, userId);
+            ps.setInt(2, jobId);
 
             int result = ps.executeUpdate();
 
@@ -241,8 +277,8 @@ public class UserApplyJobDAL {
 	    // Test Delete
 	    if (!listByUser.isEmpty()) {
 	        int applyJobId = listByUser.get(0).getUser_apply_job_id();
-	        boolean deleted = dal.Delete(applyJobId);
-	        System.out.println("Delete: " + deleted);
+//	        boolean deleted = dal.Delete(applyJobId);
+//	        System.out.println("Delete: " + deleted);
 	    }
 	}
 
