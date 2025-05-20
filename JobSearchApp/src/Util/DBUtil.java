@@ -14,7 +14,7 @@ public class DBUtil {
 			//ORCA url ="jdbc:mysql://127.0.0.1:3306/bai1?useSSL=false&serverTimezone=UTC"
 			String url = "jdbc:mysql://127.0.0.1:3306/findjob?";
 			String username = "root";
-			String password = "orca123@Mysql";
+			String password = "duong2k5555";
 			Class.forName("com.mysql.cj.jdbc.Driver");
 			conn = DriverManager.getConnection(url,username,password);
 			
