@@ -83,8 +83,7 @@ public class LoginF extends JFrame implements ActionListener {
                 case 1:
                 	new AdminF("Quản lý ứng dụng tìm kiếm việc làm",User.getUser_id());
                 	break;
-                case 2:
-                case 3:
+                case 3 : case 2:
                     new MainF("Ứng dụng Tìm kiếm Việc làm",User.getUser_id(),User.getRole());
                 	break;
                 }
