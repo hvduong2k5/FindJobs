@@ -78,7 +78,6 @@ public class LoginF extends JFrame implements ActionListener {
             Response r = loginUser.Login(user, pass);
             if(r.isSuccess()) {
             	UserDTO User = UserSession.GetUser();
-            	UserSession.GetInstance().setCurrentUser(User);// lưu thông tin người dùng hiện tại
             	this.dispose();
                 switch(User.getRole()) {
                 case 1:
