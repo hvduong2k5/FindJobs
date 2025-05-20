@@ -19,12 +19,17 @@ public class UserSaveJobBLL {
 		UserSaveJobDTO addSaveJob = new UserSaveJobDTO();
 		addSaveJob.setJob_id(jobId);
 		addSaveJob.setUser_id(userId);
-		return dal.Insert(addSaveJob);
+		if(!dal.IsJobSaved(userId, jobId)) {
+			return dal.Insert(addSaveJob);
+		}
+		return false;
 	}
-	public boolean DeleteJobSaved(int id)
+	
+	public boolean DeleteJobSaved(int userId, int jobId)
 	{
-		return dal.Delete(UserSession.GetUser().getUser_id(), id);
+		return dal.Delete(userId, jobId);
 	}
+	
 	public List<JobDTO> GetAllJobSavedOfUser(int userId, String jobName) {
         List<JobDTO> savedJobs = new ArrayList<>();
 

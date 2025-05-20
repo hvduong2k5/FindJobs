@@ -146,7 +146,7 @@ public class UserSaveJobDAL {
 		Connection conn = null;
 		try {
 			conn = DBUtil.MakeConnection();
-			String sql = "delete from usersavejob where user_id = ? and job_id";
+			String sql = "delete from usersavejob where user_id = ? and job_id = ?";
 			PreparedStatement ps = conn.prepareStatement(sql);
 			ps.setInt(1, userId);
 			ps.setInt(2, jobId);
@@ -155,7 +155,7 @@ public class UserSaveJobDAL {
 			if(result > 0)return true;
 		}
 		catch (Exception e) {
-			e.printStackTrace();// TODO: handle exception
+			e.printStackTrace();
 		}
 		finally {
 			DBUtil.CloseConnection(conn);
@@ -165,7 +165,6 @@ public class UserSaveJobDAL {
 	public boolean IsJobSaved(int userId, int jobId) {
         Connection conn = null;
         
-
         try {
         	PreparedStatement ps = null;
             ResultSet rs = null;
@@ -178,49 +177,38 @@ public class UserSaveJobDAL {
 
             int result = 0;
             if (rs.next()) {
-                result =  rs.getInt(1);
+                result = rs.getInt(1);
             }
             rs.close();
             ps.close();
-            if(result > 0) return false;
+            return result > 0;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         } finally {
-            
+            DBUtil.CloseConnection(conn);
+        }
+    }
+
+    public boolean deleteByUserId(int userId) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.MakeConnection();
+            String sql = "DELETE FROM usersavejob WHERE user_id = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, userId);
+            int result = ps.executeUpdate();
+            ps.close();
+            return result >= 0; // Trả về true ngay cả khi không có bản ghi nào bị xóa
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
             DBUtil.CloseConnection(conn);
         }
         return false;
     }
-	public static void main(String[] args) {
-	    UserSaveJobDAL dal = UserSaveJobDAL.GetInstance();
 
-	    // Tạo dữ liệu mẫu để test Insert
-	    UserSaveJobDTO newSaveJob = new UserSaveJobDTO(0, 1, 2); // user_id = 1, job_id = 2
-	    boolean insertResult = dal.Insert(newSaveJob);
-	    System.out.println("Insert: " + (insertResult ? "Success" : "Fail"));
-
-	    // Test SelectAllByUserId
-	    List<UserSaveJobDTO> userJobs = dal.SelectAllByUserId(1);
-	    System.out.println("Jobs saved by user 1: " + (userJobs != null ? userJobs.size() : 0));
-
-	    // Test SelectAllByJobId
-	    List<UserSaveJobDTO> jobUsers = dal.SelectAllByJobId(2);
-	    System.out.println("Users who saved job 2: " + (jobUsers != null ? jobUsers.size() : 0));
-
-	    // Test IsJobSaved
-	    boolean isSaved = dal.IsJobSaved(1, 2);
-	    System.out.println("Is job 2 saved by user 1? " + (isSaved ? "Yes" : "No"));
-
-	    // Test Delete (xóa bản ghi mới thêm, cần lấy ID thật nếu có tự tăng)
-	    if (userJobs != null && !userJobs.isEmpty()) {
-	        int lastId = userJobs.get(userJobs.size() - 1).getUser_save_job_id();
-	        boolean deleteResult = dal.Delete(lastId, 1);
-	        System.out.println("Delete last save job: " + (deleteResult ? "Success" : "Fail"));
-	    } else {
-	        System.out.println("No save job to delete");
-	    }
-	}
+	
 
 
 }

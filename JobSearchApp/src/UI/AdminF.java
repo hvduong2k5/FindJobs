@@ -7,23 +7,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import BLL.*;
 import DTO.*;
+
 public class AdminF extends JFrame implements ActionListener {
-
-    private JPanel mainContentPanel; // Panel chính sử dụng CardLayout
+    private JPanel mainContentPanel;
     private CardLayout cardLayout;
-
-    // Các panel con cho từng chức năng quản lý
-    private JPanel dashboardPanel; // Panel chào mừng hoặc thống kê cơ bản
-    private CategoryManagementPanel categoryManagementPanel;
+    private JPanel dashboardPanel;
     private UserManagementPanel userManagementPanel;
     private JobApprovalPanel jobApprovalPanel;
-
-    // Các nút điều hướng
-    private JButton btnNavDashboard, btnNavManageCategories, btnNavManageUsers, btnNavManageJobs, btnLogout;
-    private JPanel navigationPanel; // Panel chứa các nút điều hướng (bên trái)
-    private JLabel lbHeaderTitle; // Tiêu đề của trang Admin
-
-    private static int adminId; // Lưu ID của admin đang đăng nhập (nếu cần thiết cho các thao tác)
+    private JButton btnNavDashboard, btnNavManageUsers, btnNavManageJobs, btnLogout;
+    private JPanel navigationPanel;
+    private JLabel lbHeaderTitle;
+    private static int adminId;
 
     public AdminF(String title, int loggedInAdminId) {
         super(title);
@@ -34,132 +28,198 @@ public class AdminF extends JFrame implements ActionListener {
 
     private void initLookAndFeel() {
         try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            e.printStackTrace();
         }
     }
 
     private void initializeUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(1280, 720)); // Kích thước cửa sổ Admin
+        setPreferredSize(new Dimension(1280, 720));
 
-        // === HEADER PANEL ===
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        headerPanel.setBackground(new Color(45, 45, 45)); // Màu nền tối cho header Admin
+        // Header Panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(0, 102, 204));
+        headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
+
         lbHeaderTitle = new JLabel("TRANG QUẢN TRỊ HỆ THỐNG");
-        lbHeaderTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        lbHeaderTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lbHeaderTitle.setForeground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
-        headerPanel.add(lbHeaderTitle);
+        headerPanel.add(lbHeaderTitle, BorderLayout.WEST);
 
-        // === NAVIGATION PANEL (Bên trái) ===
+        // Navigation Panel
         navigationPanel = new JPanel();
         navigationPanel.setLayout(new BoxLayout(navigationPanel, BoxLayout.Y_AXIS));
-        navigationPanel.setBackground(new Color(60, 63, 65)); // Màu nền cho thanh điều hướng
-        navigationPanel.setBorder(new EmptyBorder(15, 5, 15, 5));
-        navigationPanel.setPreferredSize(new Dimension(220, 0)); // Chiều rộng cố định cho navigation
+        navigationPanel.setBackground(new Color(240, 240, 240));
+        navigationPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(200, 200, 200)),
+            new EmptyBorder(10, 0, 10, 0)
+        ));
+        navigationPanel.setPreferredSize(new Dimension(250, 0));
 
         // Tạo các nút điều hướng
-        btnNavDashboard = createNavigationButton("Bảng điều khiển", "dashboard_icon.png"); // Thêm icon nếu có
-        btnNavManageCategories = createNavigationButton("QL Ngành & Việc làm", "category_icon.png");
-        btnNavManageUsers = createNavigationButton("QL Người dùng", "users_icon.png");
-        btnNavManageJobs = createNavigationButton("QL Bài đăng (Jobs)", "jobs_icon.png");
-        btnLogout = createNavigationButton("Đăng xuất", "logout_icon.png");
+        btnNavDashboard = createNavButton("Bảng điều khiển", "dashboard");
+        btnNavManageUsers = createNavButton("Quản lý người dùng", "users");
+        btnNavManageJobs = createNavButton("Quản lý bài đăng", "jobs");
+        btnLogout = createNavButton("Đăng xuất", "logout");
 
         // Thêm nút vào navigation panel
         addNavButtonToPanel(btnNavDashboard);
-        addNavButtonToPanel(btnNavManageCategories);
         addNavButtonToPanel(btnNavManageUsers);
         addNavButtonToPanel(btnNavManageJobs);
-        navigationPanel.add(Box.createVerticalGlue()); // Đẩy nút logout xuống dưới cùng
+        navigationPanel.add(Box.createVerticalGlue());
         addNavButtonToPanel(btnLogout);
 
-        // === MAIN CONTENT PANEL (Bên phải, sử dụng CardLayout) ===
+        // Main Content Panel
         cardLayout = new CardLayout();
         mainContentPanel = new JPanel(cardLayout);
-        mainContentPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
-        mainContentPanel.setBackground(new Color(235, 235, 235)); // Màu nền cho nội dung chính
+        mainContentPanel.setBackground(Color.WHITE);
+        mainContentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // --- Khởi tạo các Panel con ---
-        // 1. Dashboard Panel
-        dashboardPanel = new JPanel(new BorderLayout());
-        dashboardPanel.setBackground(Color.WHITE);
-        JLabel welcomeLabel = new JLabel("Chào mừng Admin! Chọn một chức năng từ menu bên trái.", SwingConstants.CENTER);
-        welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        dashboardPanel.add(welcomeLabel, BorderLayout.CENTER);
+        // Dashboard Panel
+        dashboardPanel = createDashboardPanel();
         mainContentPanel.add(dashboardPanel, "DashboardPanel");
 
-        // 2. Category Management Panel
-        categoryManagementPanel = new CategoryManagementPanel(adminId);
-        mainContentPanel.add(categoryManagementPanel, "CategoryManagementPanel");
-
-        // 3. User Management Panel
+        // User Management Panel
         userManagementPanel = new UserManagementPanel(adminId);
         mainContentPanel.add(userManagementPanel, "UserManagementPanel");
 
-        // 4. Job Approval Panel
+        // Job Approval Panel
         jobApprovalPanel = new JobApprovalPanel(adminId);
         mainContentPanel.add(jobApprovalPanel, "JobApprovalPanel");
 
-        // === ADD PANELS TO FRAME ===
-        this.setLayout(new BorderLayout(0, 0));
-        this.add(headerPanel, BorderLayout.NORTH);
-        this.add(navigationPanel, BorderLayout.WEST);
-        this.add(mainContentPanel, BorderLayout.CENTER);
+        // Layout
+        setLayout(new BorderLayout());
+        add(headerPanel, BorderLayout.NORTH);
+        add(navigationPanel, BorderLayout.WEST);
+        add(mainContentPanel, BorderLayout.CENTER);
 
-        // === ACTION LISTENERS cho các nút điều hướng ===
+        // Action Listeners
         btnNavDashboard.addActionListener(this);
-        btnNavManageCategories.addActionListener(this);
         btnNavManageUsers.addActionListener(this);
         btnNavManageJobs.addActionListener(this);
         btnLogout.addActionListener(this);
 
         pack();
-        setLocationRelativeTo(null); // Hiển thị cửa sổ giữa màn hình
+        setLocationRelativeTo(null);
         setVisible(true);
 
-        cardLayout.show(mainContentPanel, "DashboardPanel"); // Hiển thị Dashboard mặc định khi khởi động
+        // Hiển thị dashboard mặc định
+        cardLayout.show(mainContentPanel, "DashboardPanel");
     }
 
-    private JButton createNavigationButton(String text, String iconName) {
-        JButton button = new JButton(text);
-        // Tùy chỉnh giao diện nút (ví dụ từ MainF)
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        button.setForeground(new Color(220, 220, 220));
-        button.setBackground(new Color(75, 78, 80));
-        button.setFocusPainted(false);
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        // button.setIcon(new ImageIcon(getClass().getResource("/icons/" + iconName))); // Nếu có icon
-        button.setIconTextGap(10);
-        button.setBorder(new EmptyBorder(12, 20, 12, 20));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, button.getPreferredSize().height + 10));
+    private JPanel createDashboardPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Hover effect
+        // Thống kê tổng quan
+        JPanel statsPanel = new JPanel(new GridLayout(2, 2, 15, 15));
+        statsPanel.setBackground(Color.WHITE);
+
+        // Card thống kê người dùng
+        JPanel userStatsCard = createStatCard(
+            "Tổng số người dùng",
+            "0",
+            new Color(0, 102, 204),
+            "users"
+        );
+        statsPanel.add(userStatsCard);
+
+        // Card thống kê bài đăng
+        JPanel jobStatsCard = createStatCard(
+            "Tổng số bài đăng",
+            "0",
+            new Color(40, 167, 69),
+            "jobs"
+        );
+        statsPanel.add(jobStatsCard);
+
+        // Card bài đăng chờ duyệt
+        JPanel pendingJobCard = createStatCard(
+            "Bài đăng chờ duyệt",
+            "0",
+            new Color(255, 193, 7),
+            "pending"
+        );
+        statsPanel.add(pendingJobCard);
+
+        // Card ứng viên mới
+        JPanel newApplicantCard = createStatCard(
+            "Ứng viên mới",
+            "0",
+            new Color(220, 53, 69),
+            "applicants"
+        );
+        statsPanel.add(newApplicantCard);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        panel.add(statsPanel, gbc);
+
+        // Thêm các thành phần khác vào dashboard nếu cần
+        // ...
+
+        return panel;
+    }
+
+    private JPanel createStatCard(String title, String value, Color color, String iconName) {
+        JPanel card = new JPanel(new BorderLayout(10, 10));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        titleLabel.setForeground(new Color(100, 100, 100));
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        valueLabel.setForeground(color);
+
+        JPanel contentPanel = new JPanel(new BorderLayout(5, 5));
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+        contentPanel.add(valueLabel, BorderLayout.CENTER);
+
+        card.add(contentPanel, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JButton createNavButton(String text, String iconName) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setForeground(new Color(50, 50, 50));
+        button.setBackground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(230, 40));
+        button.setMaximumSize(new Dimension(230, 40));
+
+        // Thêm hiệu ứng hover
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(90, 93, 95));
+                button.setBackground(new Color(240, 240, 240));
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(75, 78, 80));
+                button.setBackground(Color.WHITE);
             }
         });
+
         return button;
     }
 
     private void addNavButtonToPanel(JButton button) {
         navigationPanel.add(button);
-        navigationPanel.add(Box.createRigidArea(new Dimension(0, 8))); // Khoảng cách giữa các nút
+        navigationPanel.add(Box.createRigidArea(new Dimension(0, 5)));
     }
 
     @Override
@@ -168,27 +228,26 @@ public class AdminF extends JFrame implements ActionListener {
 
         if (source == btnNavDashboard) {
             cardLayout.show(mainContentPanel, "DashboardPanel");
-        } else if (source == btnNavManageCategories) {
-            cardLayout.show(mainContentPanel, "CategoryManagementPanel");
-            categoryManagementPanel.loadInitialData(); // Gọi hàm tải dữ liệu khi panel được hiển thị
         } else if (source == btnNavManageUsers) {
             cardLayout.show(mainContentPanel, "UserManagementPanel");
-            userManagementPanel.loadUsers(); // Tải dữ liệu người dùng
+            userManagementPanel.loadUsers();
         } else if (source == btnNavManageJobs) {
             cardLayout.show(mainContentPanel, "JobApprovalPanel");
-            jobApprovalPanel.loadJobsForApproval(); // Tải danh sách JOB cần duyệt
+            jobApprovalPanel.loadJobs();
         } else if (source == btnLogout) {
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận đăng xuất",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                "Bạn có chắc chắn muốn đăng xuất?",
+                "Xác nhận đăng xuất",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+                
             if (confirm == JOptionPane.YES_OPTION) {
-                this.dispose(); // Đóng cửa sổ Admin
-                // Quay lại màn hình đăng nhập hoặc MainF với vai trò khách
-                SwingUtilities.invokeLater(() -> new LoginF("Đăng nhập")); // Hoặc new MainF(...)
-//                System.out.println("Admin (ID: " + adminId + ") đã đăng xuất.");
+                this.dispose();
+                new LoginF("Đăng nhập");
             }
         }
     }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new AdminF("Trang Quản Trị", adminId));
     }

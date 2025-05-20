@@ -1,72 +1,108 @@
 package UI;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.border.*;
+import javax.swing.table.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.util.List;
 import DTO.*;
 import Util.Response;
 import BLL.*;
 
 public class UserManagementPanel extends JPanel implements ActionListener {
-
     private JTable tblUsers;
     private DefaultTableModel userTableModel;
-    private JButton btnAddUser, btnEditUser, btnDeleteUser; 
-    private JComboBox<String> cbRoleFilter; 
-
+    private JButton btnAddUser, btnEditUser, btnDeleteUser, btnToggleStatus;
+    private JComboBox<String> cbRoleFilter;
+    private JTextField txtSearch;
+    private JButton btnSearch;
     private int currentSelectedUserId = -1;
     private int adminId;
 
     public UserManagementPanel(int adminId) {
         this.adminId = adminId;
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder(null, "Quản lý Tài khoản Người dùng (HR & Ứng viên)",
-            TitledBorder.CENTER, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 16), new Color(0, 102, 204)));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(Color.WHITE);
 
-        // --- Panel Controls (Filter, Buttons) ---
-        JPanel topControlPanel = new JPanel(new BorderLayout(10, 5));
-        topControlPanel.setBackground(Color.WHITE);
-        topControlPanel.setBorder(new EmptyBorder(5,0,10,0));
+        // Panel tiêu đề
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("QUẢN LÝ NGƯỜI DÙNG");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(0, 102, 204));
+        titlePanel.add(titleLabel, BorderLayout.WEST);
+        add(titlePanel, BorderLayout.NORTH);
 
+        // Panel tìm kiếm và lọc
+        JPanel searchFilterPanel = new JPanel(new BorderLayout(10, 0));
+        searchFilterPanel.setBackground(Color.WHITE);
+        searchFilterPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+
+        // Panel tìm kiếm
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(Color.WHITE);
+        txtSearch = new JTextField(20);
+        txtSearch.setPreferredSize(new Dimension(250, 35));
+        txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnSearch.setBackground(new Color(0, 102, 204));
+        btnSearch.setForeground(Color.WHITE);
+        btnSearch.setFocusPainted(false);
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        searchPanel.add(new JLabel("Tìm kiếm:"));
+        searchPanel.add(txtSearch);
+        searchPanel.add(btnSearch);
+
+        // Panel lọc
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterPanel.setBackground(Color.WHITE);
-        filterPanel.add(new JLabel("Lọc theo vai trò:"));
-        // Giả sử role_id: 1-Admin, 2-HR, 3-User/Candidate
-        cbRoleFilter = new JComboBox<>(new String[]{"Tất cả", "Quản lý viên (Admin)","Nhà tuyển dụng (HR)", "Người tìm việc (Ứng viên)"});
-        cbRoleFilter.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cbRoleFilter.addActionListener(e -> loadUsers()); // Tải lại khi filter thay đổi
+        cbRoleFilter = new JComboBox<>(new String[]{"Tất cả", "Quản trị viên", "Nhà tuyển dụng", "Ứng viên"});
+        cbRoleFilter.setPreferredSize(new Dimension(200, 35));
+        cbRoleFilter.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        filterPanel.add(new JLabel("Vai trò:"));
         filterPanel.add(cbRoleFilter);
-        topControlPanel.add(filterPanel, BorderLayout.WEST);
 
-        JPanel buttonActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        buttonActionPanel.setBackground(Color.WHITE);
-        btnAddUser = createCrudButton("Thêm Người dùng");
-        btnEditUser = createCrudButton("Sửa Thông tin");
-        btnDeleteUser = createCrudButton("Xóa Người dùng");
+        searchFilterPanel.add(searchPanel, BorderLayout.WEST);
+        searchFilterPanel.add(filterPanel, BorderLayout.EAST);
+        add(searchFilterPanel, BorderLayout.CENTER);
+
+        // Panel nút thao tác
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+
+        btnAddUser = createActionButton("Thêm mới", new Color(40, 167, 69));
+        btnEditUser = createActionButton("Chỉnh sửa", new Color(0, 123, 255));
+        btnToggleStatus = createActionButton("Khóa/Mở khóa", new Color(255, 193, 7));
+        btnDeleteUser = createActionButton("Xóa", new Color(220, 53, 69));
 
         btnEditUser.setEnabled(false);
+        btnToggleStatus.setEnabled(false);
         btnDeleteUser.setEnabled(false);
 
-        buttonActionPanel.add(btnAddUser);
-        buttonActionPanel.add(btnEditUser);
-        buttonActionPanel.add(btnDeleteUser);
-        topControlPanel.add(buttonActionPanel, BorderLayout.EAST);
-        add(topControlPanel, BorderLayout.NORTH);
+        buttonPanel.add(btnAddUser);
+        buttonPanel.add(btnEditUser);
+        buttonPanel.add(btnToggleStatus);
+        buttonPanel.add(btnDeleteUser);
+        add(buttonPanel, BorderLayout.SOUTH);
 
-        // --- Table hiển thị người dùng ---
-        // Thêm các cột cần thiết: ID, Username, Họ Tên, Email, Số ĐT, Vai trò, Trạng thái (Active/Banned)
-        String[] userColumns = {"ID", "Tên đăng nhập", "Họ Tên", "Vai trò"};
-        userTableModel = new DefaultTableModel(userColumns, 0) {
-            @Override public boolean isCellEditable(int row, int column) { return false; }
+        // Bảng người dùng
+        String[] columns = {"ID", "Tên đăng nhập", "Họ và tên", "Vai trò"};
+        userTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         tblUsers = new JTable(userTableModel);
-        styleTable(tblUsers); // Sử dụng lại hàm styleTable từ CategoryManagementPanel hoặc tạo mới
+        styleTable(tblUsers);
+
+        // Thêm renderer cho cột vai trò
+        tblUsers.getColumnModel().getColumn(3).setCellRenderer(new RoleRenderer());
+
         tblUsers.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && tblUsers.getSelectedRow() != -1) {
                 currentSelectedUserId = Integer.parseInt(tblUsers.getValueAt(tblUsers.getSelectedRow(), 0).toString());
@@ -78,94 +114,198 @@ public class UserManagementPanel extends JPanel implements ActionListener {
                 btnDeleteUser.setEnabled(false);
             }
         });
-        add(new JScrollPane(tblUsers), BorderLayout.CENTER);
 
-        // Action Listeners
+        JScrollPane scrollPane = new JScrollPane(tblUsers);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(10, 0, 0, 0)
+        ));
+        add(scrollPane, BorderLayout.CENTER);
+
+        // Thêm action listeners
         btnAddUser.addActionListener(this);
         btnEditUser.addActionListener(this);
+        btnToggleStatus.addActionListener(this);
         btnDeleteUser.addActionListener(this);
-        loadUsers(); // Tải dữ liệu ban đầu
+        btnSearch.addActionListener(this);
+        cbRoleFilter.addActionListener(this);
+        txtSearch.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    loadUsers();
+                }
+            }
+        });
+
+        loadUsers();
     }
 
-    // Copy hàm styleTable và createCrudButton từ CategoryManagementPanel hoặc tạo chung ở 1 utility class
-    private void styleTable(JTable table) { /* ... như trên ... */
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
-        table.getTableHeader().setBackground(new Color(220, 220, 220));
-        table.getTableHeader().setForeground(new Color(50,50,50));
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setGridColor(new Color(200, 200, 200));
-    }
-    private JButton createCrudButton(String text) { 
+    private JButton createActionButton(String text, Color color) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        button.setBackground(new Color(230,230,230));
-        button.setForeground(Color.BLACK);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
+        button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(180, 180, 180)),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
+        button.setPreferredSize(new Dimension(120, 35));
+        
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(color.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(color);
+            }
+        });
+        
         return button;
     }
 
+    private void styleTable(JTable table) {
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(35);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        table.getTableHeader().setBackground(new Color(240, 240, 240));
+        table.getTableHeader().setForeground(new Color(50, 50, 50));
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setGridColor(new Color(200, 200, 200));
+        table.setShowGrid(true);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        
+        // Căn giữa các cột
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+    }
+
+    private class RoleRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(
+                table, value, isSelected, hasFocus, row, column);
+            
+            int role = (int) value;
+            String roleText = "";
+            Color roleColor = null;
+            
+            switch (role) {
+                case 1:
+                    roleText = "Quản trị viên";
+                    roleColor = new Color(220, 53, 69); // Đỏ
+                    break;
+                case 2:
+                    roleText = "Nhà tuyển dụng";
+                    roleColor = new Color(0, 123, 255); // Xanh dương
+                    break;
+                case 3:
+                    roleText = "Ứng viên";
+                    roleColor = new Color(40, 167, 69); // Xanh lá
+                    break;
+                default:
+                    roleText = "Không xác định";
+                    roleColor = new Color(108, 117, 125); // Xám
+            }
+            
+            label.setText(roleText);
+            label.setBackground(roleColor);
+            label.setForeground(Color.WHITE);
+            label.setHorizontalAlignment(JLabel.CENTER);
+            label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            label.setOpaque(true);
+            
+            return label;
+        }
+    }
 
     public void loadUsers() {
         userTableModel.setRowCount(0);
-        String selectedRoleFilter = (String) cbRoleFilter.getSelectedItem();
-        int roleIdToFilter = 0; 
-        if("Quản lý viên (Admin)".equals(selectedRoleFilter)) roleIdToFilter = 1;
-        else if ("Nhà tuyển dụng (HR)".equals(selectedRoleFilter)) roleIdToFilter = 2; 
-        else if ("Người tìm việc (Ứng viên)".equals(selectedRoleFilter)) roleIdToFilter = 3; 
-          UserBLL User = new UserBLL();
-          List<UserDTO> listUser = User.getUsersByName("", roleIdToFilter);
-          for (UserDTO user : listUser) {
-        	  userTableModel.addRow(new Object[]{
-        		                     user.getUser_id(),
-        		                     user.getAccount(),
-        		                     user.getUser_name(),
-        		                     user.getRole(),
-        		                     });
-		}
+        String searchText = txtSearch.getText().trim();
+        String selectedRole = (String) cbRoleFilter.getSelectedItem();
+        int roleId = 0;
+        
+        switch (selectedRole) {
+            case "Quản trị viên": roleId = 1; break;
+            case "Nhà tuyển dụng": roleId = 2; break;
+            case "Ứng viên": roleId = 3; break;
+        }
+
+        UserBLL userBLL = new UserBLL();
+        List<UserDTO> users = userBLL.getUsersByName(searchText, roleId);
+        
+        for (UserDTO user : users) {
+            userTableModel.addRow(new Object[]{
+                user.getUser_id(),
+                user.getAccount(),
+                user.getUser_name(),
+                user.getRole()
+            });
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
+        
+        if (source == btnSearch || source == cbRoleFilter) {
+            loadUsers();
+            return;
+        }
+
+        if (currentSelectedUserId == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Vui lòng chọn một người dùng để thực hiện thao tác!",
+                "Thông báo",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (source == btnAddUser) {
-//        	int Id = Integer.parseInt(tblUsers.getValueAt(tblUsers.getSelectedRow(), 0).toString());
-            UserFormDialog addUserDialog = new UserFormDialog(
-                    (Frame) SwingUtilities.getWindowAncestor(this),
-                    "Thêm Người dùng mới",
-                    -1//add
+            UserFormDialog dialog = new UserFormDialog(
+                (Frame) SwingUtilities.getWindowAncestor(this),
+                "Thêm người dùng mới",
+                -1
             );
-            addUserDialog.setVisible(true);
-            
-                loadUsers();
-              
-            // JOptionPane.showMessageDialog(this, "Mở form thêm USER chi tiết.\n(Cần tạo UserFormDialog.java)", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            dialog.setVisible(true);
+            loadUsers();
         }
-        if (source == btnEditUser) {
-            if (currentSelectedUserId != -1) {
-            	UserFormDialog editUserDialog = new UserFormDialog(
-                      (Frame) SwingUtilities.getWindowAncestor(this),
-                      "Chỉnh sửa Thông tin Người dùng (ID: " + currentSelectedUserId + ")",
-                      currentSelectedUserId
-              );
-              editUserDialog.setVisible(true);
-                  loadUsers(); 
-            }
+        else if (source == btnEditUser) {
+            UserFormDialog dialog = new UserFormDialog(
+                (Frame) SwingUtilities.getWindowAncestor(this),
+                "Chỉnh sửa thông tin người dùng",
+                currentSelectedUserId
+            );
+            dialog.setVisible(true);
+            loadUsers();
         }
-        if(source ==btnDeleteUser) {
-        	UserBLL deleteUser = new UserBLL();
-//        	JOptionPane.showMessageDialog(this,"hehe");
-            Response r = deleteUser.deleteUser(currentSelectedUserId);
-            if(r.isSuccess()) {
-            	JOptionPane.showMessageDialog(this, r.getMessage());	
-            }else {
-            	JOptionPane.showMessageDialog(this, r.getMessage());
+        else if (source == btnDeleteUser) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Bạn có chắc chắn muốn xóa người dùng này không?\n" +
+                "Lưu ý: Hành động này không thể hoàn tác!",
+                "Xác nhận xóa",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+                
+            if (confirm == JOptionPane.YES_OPTION) {
+                UserBLL userBLL = new UserBLL();
+                Response response = userBLL.deleteUser(currentSelectedUserId);
+                
+                if (response.isSuccess()) {
+                    JOptionPane.showMessageDialog(this,
+                        "Xóa người dùng thành công!",
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    loadUsers();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                        response.getMessage(),
+                        "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }

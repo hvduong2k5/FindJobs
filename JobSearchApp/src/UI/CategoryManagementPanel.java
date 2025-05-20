@@ -9,10 +9,11 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-// import java.sql.*; // Cần cho DB operations
-// import your.package.DBConnection; // Class kết nối CSDL
-// import your.package.model.Category; // Model cho ngành nghề
-// import your.package.model.Job; // Model cho công việc
+import BLL.*;
+import DTO.*;
+import Util.Response;
+import java.util.*;
+import java.util.List;
 
 public class CategoryManagementPanel extends JPanel implements ActionListener {
 
@@ -29,8 +30,20 @@ public class CategoryManagementPanel extends JPanel implements ActionListener {
     private int currentSelectedJobId = -1;
     private int adminId;
 
+    private CategoryBLL categoryBLL;
+    private JobBLL jobBLL;
+
     public CategoryManagementPanel(int adminId) {
         this.adminId = adminId;
+        try {
+            categoryBLL = new CategoryBLL();
+            jobBLL = new JobBLL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khởi tạo lớp xử lý nghiệp vụ: " + e.getMessage(),
+                "Lỗi nghiêm trọng", JOptionPane.ERROR_MESSAGE);
+        }
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(Color.WHITE);
@@ -187,25 +200,23 @@ public class CategoryManagementPanel extends JPanel implements ActionListener {
 
     private void loadCategories() {
         categoryTableModel.setRowCount(0); // Xóa dữ liệu cũ
-        // TODO: Viết code để tải danh sách ngành nghề từ CSDL
-        // Ví dụ:
-        // String sql = "SELECT category_id, category_name FROM category ORDER BY category_name";
-        // try (Connection conn = DBConnection.getConnection();
-        //      PreparedStatement pstmt = conn.prepareStatement(sql);
-        //      ResultSet rs = pstmt.executeQuery()) {
-        //     while (rs.next()) {
-        //         categoryTableModel.addRow(new Object[]{rs.getInt("category_id"), rs.getString("category_name")});
-        //     }
-        // } catch (SQLException e) {
-        //     JOptionPane.showMessageDialog(this, "Lỗi tải danh sách ngành nghề: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-        //     e.printStackTrace();
-        // }
-
-        // --- Dữ liệu mẫu (xóa khi có CSDL thật) ---
-        categoryTableModel.addRow(new Object[]{1, "Công nghệ Thông tin"});
-        categoryTableModel.addRow(new Object[]{2, "Kinh doanh & Marketing"});
-        categoryTableModel.addRow(new Object[]{3, "Thiết kế & Sáng tạo"});
-        // --- Kết thúc dữ liệu mẫu ---
+        try {
+            List<CategoryDTO> categories = new ArrayList<CategoryDTO>();
+            categories= categoryBLL.getAllCategories();
+            if (categories != null) {
+                for (CategoryDTO category : categories) {
+                    categoryTableModel.addRow(new Object[]{
+                        category.getCategoryId(),
+                        category.getCategoryName()
+                    });
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi tải danh sách ngành nghề: " + e.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
 
         tblCategories.clearSelection(); // Bỏ chọn dòng hiện tại (nếu có)
         btnEditCategory.setEnabled(false);
@@ -218,145 +229,224 @@ public class CategoryManagementPanel extends JPanel implements ActionListener {
         jobTableModel.setRowCount(0); // Xóa dữ liệu cũ
         if (categoryId == -1) return;
 
-        // TODO: Viết code để tải danh sách công việc thuộc categoryId từ CSDL
-        // (Chỉ các thông tin cơ bản để hiển thị trên bảng, chi tiết sẽ xem/sửa ở dialog)
-        // Ví dụ:
-        // String sql = "SELECT j.job_id, j.job_name, j.company_name, j.address " +
-        //              "FROM job j JOIN categoryofjob coj ON j.job_id = coj.job_id " +
-        //              "WHERE coj.category_id = ? AND j.is_deleted = 0"; // Giả sử có cột is_deleted
-        // try (Connection conn = DBConnection.getConnection();
-        //      PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        //     pstmt.setInt(1, categoryId);
-        //     ResultSet rs = pstmt.executeQuery();
-        //     while (rs.next()) {
-        //         jobTableModel.addRow(new Object[]{
-        //                 rs.getInt("job_id"),
-        //                 rs.getString("job_name"),
-        //                 rs.getString("company_name"),
-        //                 rs.getString("address")
-        //         });
-        //     }
-        // } catch (SQLException e) {
-        //     JOptionPane.showMessageDialog(this, "Lỗi tải danh sách việc làm: " + e.getMessage(), "Lỗi CSDL", JOptionPane.ERROR_MESSAGE);
-        //     e.printStackTrace();
-        // }
-
-        // --- Dữ liệu mẫu (xóa khi có CSDL thật) ---
-        if (categoryId == 1) {
-            jobTableModel.addRow(new Object[]{101, "Java Developer Full-stack", "FPT Software", "Hà Nội, Đà Nẵng"});
-            jobTableModel.addRow(new Object[]{102, "Frontend Developer (ReactJS)", "NashTech", "TP. Hồ Chí Minh"});
-        } else if (categoryId == 2) {
-            jobTableModel.addRow(new Object[]{201, "Chuyên viên Digital Marketing", "Shopee Vietnam", "TP. Hồ Chí Minh"});
+        try {
+            List<JobDTO> jobs = new ArrayList<JobDTO>();
+            		jobs = categoryBLL.getJobsByCategory(categoryId);
+            if (jobs != null) {
+                for (JobDTO job : jobs) {
+                    jobTableModel.addRow(new Object[]{
+                        job.getJobId(),
+                        job.getJobName(),
+                        job.getCompanyName(),
+                        job.getAddress()
+                    });
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi tải danh sách công việc: " + e.getMessage(),
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
-        // --- Kết thúc dữ liệu mẫu ---
+
         tblJobsInCategory.clearSelection();
         btnEditJobInCategory.setEnabled(false);
         btnDeleteJobInCategory.setEnabled(false);
     }
 
+    private void showCategoryDialog(String title, CategoryDTO category) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), title, true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(400, 200);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JLabel lbName = new JLabel("Tên ngành nghề:");
+        JTextField txtName = new JTextField(category != null ? category.getCategoryName() : "", 20);
+        inputPanel.add(lbName);
+        inputPanel.add(txtName);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnSave = new JButton("Lưu");
+        JButton btnCancel = new JButton("Hủy");
+        buttonPanel.add(btnSave);
+        buttonPanel.add(btnCancel);
+
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        btnSave.addActionListener(e -> {
+            String categoryName = txtName.getText().trim();
+            if (categoryName.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog,
+                    "Vui lòng nhập tên ngành nghề!",
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                Response success;
+                if (category == null) {
+                    // Thêm mới
+                    success = categoryBLL.addCategory(categoryName);
+                    if (success.isSuccess()) {
+                        JOptionPane.showMessageDialog(dialog,
+                            "Thêm ngành nghề thành công!",
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                        dialog.dispose();
+                        loadCategories(); // Tải lại danh sách
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                            "Không thể thêm ngành nghề. Vui lòng thử lại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    // Cập nhật
+                    category.setCategoryName(categoryName);
+                    success = categoryBLL.addCategory(category.getCategoryName());
+                    if (success.isSuccess()) {
+                        JOptionPane.showMessageDialog(dialog,
+                            "Cập nhật ngành nghề thành công!",
+                            "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                        dialog.dispose();
+                        loadCategories(); // Tải lại danh sách
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                            "Không thể cập nhật ngành nghề. Vui lòng thử lại.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(dialog,
+                    "Lỗi: " + ex.getMessage(),
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+        dialog.setVisible(true);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object source = e.getSource();
-
-        // === Xử lý cho Ngành nghề ===
-        if (source == btnAddCategory) {
-            String newCategoryName = JOptionPane.showInputDialog(this, "Nhập tên ngành nghề mới:", "Thêm Ngành nghề", JOptionPane.PLAIN_MESSAGE);
-            if (newCategoryName != null && !newCategoryName.trim().isEmpty()) {
-                // TODO: Code thêm ngành mới vào CSDL
-                // Kiểm tra tên ngành đã tồn tại chưa
-                // String sql = "INSERT INTO category (category_name, created_by_admin_id) VALUES (?, ?)";
-                // ...
-                System.out.println("Admin (ID " + adminId + ") thêm ngành: " + newCategoryName);
-                JOptionPane.showMessageDialog(this, "Đã thêm ngành '" + newCategoryName + "' (Mô phỏng).", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                loadCategories(); // Tải lại danh sách
-            }
-        } else if (source == btnEditCategory) {
+        if (e.getSource() == btnAddCategory) {
+            showCategoryDialog("Thêm ngành nghề mới", null);
+        } else if (e.getSource() == btnEditCategory) {
             if (currentSelectedCategoryId != -1) {
-                String currentName = (String) tblCategories.getValueAt(tblCategories.getSelectedRow(), 1);
-                String updatedName = (String) JOptionPane.showInputDialog(this, "Cập nhật tên ngành nghề:", "Sửa Ngành nghề",
-                        JOptionPane.PLAIN_MESSAGE, null, null, currentName);
-                if (updatedName != null && !updatedName.trim().isEmpty() && !updatedName.trim().equals(currentName)) {
-                    // TODO: Code cập nhật tên ngành trong CSDL
-                    // String sql = "UPDATE category SET category_name = ?, updated_by_admin_id = ?, updated_at = NOW() WHERE category_id = ?";
-                    // ...
-                    System.out.println("Admin (ID " + adminId + ") sửa ngành ID " + currentSelectedCategoryId + " thành: " + updatedName);
-                    JOptionPane.showMessageDialog(this, "Đã sửa ngành (Mô phỏng).", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                    loadCategories(); // Tải lại
+                try {
+                    CategoryDTO category = categoryBLL.getCategoryById(currentSelectedCategoryId);
+                    if (category != null) {
+                        showCategoryDialog("Sửa ngành nghề", category);
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Không tìm thấy thông tin ngành nghề.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this,
+                        "Lỗi: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        } else if (source == btnDeleteCategory) {
+        } else if (e.getSource() == btnDeleteCategory) {
             if (currentSelectedCategoryId != -1) {
                 int confirm = JOptionPane.showConfirmDialog(this,
-                        "Bạn có chắc chắn muốn xóa ngành '" + currentSelectedCategoryName + "'?\n" +
-                        "LƯU Ý: Tất cả công việc thuộc ngành này cũng có thể bị ảnh hưởng hoặc xóa theo.\n" +
-                        "Hành động này KHÔNG THỂ hoàn tác.",
-                        "Xác nhận xóa ngành", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Bạn có chắc chắn muốn xóa ngành nghề này?\n" +
+                    "Tất cả công việc trong ngành này cũng sẽ bị xóa!",
+                    "Xác nhận xóa",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
                 if (confirm == JOptionPane.YES_OPTION) {
-                    // TODO: Code xóa ngành khỏi CSDL. Cần xử lý cẩn thận các khóa ngoại:
-                    // 1. Xóa các liên kết trong bảng categoryofjob.
-                    // 2. Cân nhắc việc xóa hẳn các job chỉ thuộc ngành này, hoặc gán chúng vào một ngành "Chưa phân loại".
-                    //    Hoặc chỉ cho xóa ngành nếu không còn job nào thuộc về nó.
-                    // String sqlDeleteLinks = "DELETE FROM categoryofjob WHERE category_id = ?";
-                    // String sqlDeleteCategory = "DELETE FROM category WHERE category_id = ?";
-                    // ...
-                    System.out.println("Admin (ID " + adminId + ") xóa ngành ID: " + currentSelectedCategoryId);
-                    JOptionPane.showMessageDialog(this, "Đã xóa ngành (Mô phỏng).", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                    loadCategories(); // Tải lại
+                    try {
+                        Response success = categoryBLL.deleteCategory(currentSelectedCategoryId);
+                        if (success.isSuccess()) {
+                            JOptionPane.showMessageDialog(this,
+                                "Xóa ngành nghề thành công!",
+                                "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                            loadCategories(); // Tải lại danh sách
+                        } else {
+                            JOptionPane.showMessageDialog(this,
+                                "Không thể xóa ngành nghề. Vui lòng thử lại.",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this,
+                            "Lỗi: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         }
 
         // === Xử lý cho Công việc trong Ngành ===
-        else if (source == btnAddJobToCategory) {
+        else if (e.getSource() == btnAddJobToCategory) {
             if (currentSelectedCategoryId != -1) {
-                // Hiển thị một JDialog tùy chỉnh để nhập thông tin công việc chi tiết
-                // JobFormDialog addJobDialog = new JobFormDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                //                                              "Thêm Việc mới vào ngành: " + currentSelectedCategoryName,
-                //                                              null, currentSelectedCategoryId, adminId);
-                // addJobDialog.setVisible(true);
-                // if (addJobDialog.isSucceeded()) {
-                //     loadJobsForCategory(currentSelectedCategoryId); // Tải lại danh sách việc làm
-                // }
-                JOptionPane.showMessageDialog(this, "Mở form thêm JOB chi tiết cho ngành '" + currentSelectedCategoryName + "'.\n(Cần tạo JobFormDialog.java)", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                // TODO: Tạo JobFormDialog để thêm công việc mới
+                JOptionPane.showMessageDialog(this, 
+                    "Mở form thêm JOB chi tiết cho ngành '" + currentSelectedCategoryName + "'.\n(Cần tạo JobFormDialog.java)", 
+                    "Thông báo", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                 JOptionPane.showMessageDialog(this, "Vui lòng chọn một ngành trước khi thêm công việc.", "Yêu cầu", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, 
+                    "Vui lòng chọn một ngành trước khi thêm công việc.", 
+                    "Yêu cầu", JOptionPane.WARNING_MESSAGE);
             }
-        } else if (source == btnEditJobInCategory) {
-             if (currentSelectedJobId != -1) {
-                 // TODO: Lấy thông tin job hiện tại từ CSDL dựa vào currentSelectedJobId
-                 // Job jobToEdit = getJobByIdFromDatabase(currentSelectedJobId); // Hàm này bạn cần tự tạo
-                 // if (jobToEdit != null) {
-                 //    JobFormDialog editJobDialog = new JobFormDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                //                                              "Chỉnh sửa thông tin việc làm",
-                //                                              jobToEdit, currentSelectedCategoryId, adminId); // categoryId có thể không cần nếu job đã có sẵn
-                 //    editJobDialog.setVisible(true);
-                 //    if (editJobDialog.isSucceeded()) {
-                 //        loadJobsForCategory(currentSelectedCategoryId);
-                 //    }
-                 // } else {
-                 //    JOptionPane.showMessageDialog(this, "Không tìm thấy thông tin công việc để sửa.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                 // }
-                 JOptionPane.showMessageDialog(this, "Mở form sửa JOB ID: " + currentSelectedJobId + ".\n(Cần tạo JobFormDialog.java và lấy data job)", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-
+        } else if (e.getSource() == btnEditJobInCategory) {
+            if (currentSelectedJobId != -1) {
+                try {
+                    JobDTO job = jobBLL.getJobById(currentSelectedJobId);
+                    if (job != null) {
+                        // TODO: Tạo JobFormDialog để sửa công việc
+                        JOptionPane.showMessageDialog(this, 
+                            "Mở form sửa JOB ID: " + currentSelectedJobId + ".\n(Cần tạo JobFormDialog.java)", 
+                            "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Không tìm thấy thông tin công việc.",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this,
+                        "Lỗi: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
             }
-        } else if (source == btnDeleteJobInCategory) {
+        } else if (e.getSource() == btnDeleteJobInCategory) {
             if (currentSelectedJobId != -1) {
                 String jobNameToDelete = tblJobsInCategory.getValueAt(tblJobsInCategory.getSelectedRow(), 1).toString();
                 int confirm = JOptionPane.showConfirmDialog(this,
-                        "Bạn có chắc chắn muốn xóa công việc '" + jobNameToDelete + "' (ID: " + currentSelectedJobId + ") khỏi ngành này?\n" +
-                        "Nếu công việc này không thuộc ngành nào khác, nó có thể bị xóa hoàn toàn.\n" +
-                        "Hành động này KHÔNG THỂ hoàn tác.",
-                        "Xác nhận xóa việc", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Bạn có chắc chắn muốn xóa công việc '" + jobNameToDelete + "' (ID: " + currentSelectedJobId + ") khỏi ngành này?\n" +
+                    "Nếu công việc này không thuộc ngành nào khác, nó có thể bị xóa hoàn toàn.\n" +
+                    "Hành động này KHÔNG THỂ hoàn tác.",
+                    "Xác nhận xóa việc", 
+                    JOptionPane.YES_NO_OPTION, 
+                    JOptionPane.WARNING_MESSAGE);
+
                 if (confirm == JOptionPane.YES_OPTION) {
-                    // TODO: Code xóa công việc.
-                    // 1. Xóa liên kết trong categoryofjob: DELETE FROM categoryofjob WHERE job_id = ? AND category_id = ?
-                    // 2. Kiểm tra xem job_id này có còn liên kết với category nào khác không.
-                    //    Nếu không, cân nhắc xóa hẳn job đó: DELETE FROM job WHERE job_id = ? (và các bảng liên quan như saved_jobs, applications)
-                    //    Hoặc đặt is_deleted = 1 cho job đó.
-                    // ...
-                    System.out.println("Admin (ID " + adminId + ") xóa việc ID: " + currentSelectedJobId + " khỏi ngành ID: " + currentSelectedCategoryId);
-                    JOptionPane.showMessageDialog(this, "Đã xóa việc (Mô phỏng).", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                    loadJobsForCategory(currentSelectedCategoryId); // Tải lại
+                    try {
+                        Response success = jobBLL.deleteJob(currentSelectedJobId);
+                        if (success.isSuccess()) {
+                            JOptionPane.showMessageDialog(this,
+                                "Xóa công việc thành công!",
+                                "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                            loadJobsForCategory(currentSelectedCategoryId); // Tải lại danh sách
+                        } else {
+                            JOptionPane.showMessageDialog(this,
+                                "Không thể xóa công việc. Vui lòng thử lại.",
+                                "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this,
+                            "Lỗi: " + ex.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         }

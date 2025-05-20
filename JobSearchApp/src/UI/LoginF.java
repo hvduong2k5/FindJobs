@@ -104,7 +104,5 @@ public class LoginF extends JFrame implements ActionListener {
         }   
     }
 
-    public static void main(String[] args) {
-        new LoginF("Đăng nhập hệ thống");
-    }
+    
 }

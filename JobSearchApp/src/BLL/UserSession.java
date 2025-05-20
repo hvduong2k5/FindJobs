@@ -57,7 +57,7 @@ public class UserSession {
          return currentUser.getRole() == roleId;
     }
     public boolean isAdmin() {
-         final int ADMIN_ROLE_ID = 99;  
+         final int ADMIN_ROLE_ID = 1;  
         return isInRole(ADMIN_ROLE_ID);
     }
 }

@@ -234,6 +234,25 @@ public class UserApplyJobDAL {
         }
         return false; 
     }
+
+    public boolean deleteByUserId(int userId) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.MakeConnection();
+            String sql = "DELETE FROM userapplyjob WHERE user_id = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, userId);
+            int result = ps.executeUpdate();
+            ps.close();
+            return result >= 0; // Trả về true ngay cả khi không có bản ghi nào bị xóa
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.CloseConnection(conn);
+        }
+        return false;
+    }
+
 	public static void main(String[] args) {
 	    UserApplyJobDAL dal = UserApplyJobDAL.GetInstance();
 
